@@ -239,7 +239,7 @@ body{font-family:'Pretendard',-apple-system,sans-serif;background:var(--g0);colo
     <div class="summary-grid">
       <div class="summary-card total"><div class="card-icon">💰</div><div class="card-label">총 자산</div><div class="card-value" id="s-total">—</div><div class="card-change" id="s-total-c">—</div></div>
       <div class="summary-card domestic"><div class="card-icon">🇰🇷</div><div class="card-label">국내 주식</div><div class="card-value" id="s-kr">—</div><div class="card-change" id="s-kr-c">—</div></div>
-      <div class="summary-card overseas"><div class="card-icon">🌏</div><div class="card-label">해외 주식</div><div class="card-value" id="s-us">—</div><div class="card-change" id="s-us-c">—</div></div>
+      <div class="summary-card overseas"><div class="card-icon">🌏</div><div class="card-label">해외 주식 (원화환산)</div><div class="card-value" id="s-us">—</div><div class="card-change" id="s-us-c">—</div></div>
       <div class="summary-card crypto"><div class="card-icon">₿</div><div class="card-label">암호화폐 (실시간)</div><div class="card-value" id="s-crypto">—</div><div class="card-change" id="s-crypto-c">—</div></div>
     </div>
 
@@ -716,7 +716,8 @@ async function fetchPriceForModal(){
 
     if(price!==null && price>0){
       document.getElementById('f-price').value = price;
-      setFetchStatus('ok', `✅ ${price.toLocaleString()} ${type==='us'?'USD':'KRW'} — 시세 반영 완료`);
+      const dispPrice = type==='us' ? `$${price.toLocaleString()} (≈ ₩${Math.round(price*usdKrw).toLocaleString()})` : `₩${price.toLocaleString()}`;
+        setFetchStatus('ok', `✅ ${dispPrice} — 시세 반영 완료`);
     } else {
       setFetchStatus('err','⚠️ 시세를 찾을 수 없습니다. 티커를 확인해주세요');
     }
@@ -778,8 +779,15 @@ function render(){
     const evalKrw = p.type==='us' ? p.qty*p.currentPrice*usdKrw : p.qty*p.currentPrice;
     const costKrw = p.type==='us' ? p.qty*p.avgBuy*usdKrw : p.qty*p.avgBuy;
     const pct = costKrw ? (evalKrw-costKrw)/costKrw*100 : 0;
-    const prStr = p.type==='us' ? `$${p.currentPrice.toLocaleString()}` : `₩${Math.round(p.currentPrice).toLocaleString()}`;
-    const avStr = p.type==='us' ? `$${p.avgBuy.toLocaleString()}` : `₩${p.avgBuy.toLocaleString()}`;
+    // 해외주식도 원화로 표시 (달러 원본은 툴팁으로)
+    const prKrw = p.type==='us' ? Math.round(p.currentPrice * usdKrw) : Math.round(p.currentPrice);
+    const avKrw = p.type==='us' ? Math.round(p.avgBuy * usdKrw) : Math.round(p.avgBuy);
+    const prStr = p.type==='us'
+      ? `<span title="$${p.currentPrice.toLocaleString()}">₩${prKrw.toLocaleString()}</span>`
+      : `₩${prKrw.toLocaleString()}`;
+    const avStr = p.type==='us'
+      ? `<span title="$${p.avgBuy.toLocaleString()}">₩${avKrw.toLocaleString()}</span>`
+      : `₩${avKrw.toLocaleString()}`;
     const qStr  = p.type==='crypto' ? `${p.qty} ${p.ticker}` : `${p.qty}주`;
     const badge = p.type==='kr'?'badge-kr':p.type==='us'?'badge-us':'badge-crypto';
     const bTxt  = p.type==='kr'?'국내':p.type==='us'?'해외':'코인';
