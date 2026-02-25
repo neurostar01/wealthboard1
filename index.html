@@ -577,22 +577,45 @@ async function fetchUSPrice(ticker){
 }
 
 // ────────────────────────────────────────────────
-// 국내 주식 시세 (Yahoo Finance via allorigins proxy)
-// 종목코드 + ".KS" (코스피) / ".KQ" (코스닥)
-// allorigins는 CORS 우회 무료 프록시
+// 국내 주식 시세 — 복수 소스 순차 시도
+// 1) Yahoo Finance (corsproxy.io)
+// 2) Yahoo Finance (allorigins)
+// 3) Yahoo Finance (직접)
 // ────────────────────────────────────────────────
 async function fetchKRPrice(ticker){
-  // 코스피/코스닥 자동 시도
   for(const suffix of ['.KS','.KQ']){
+    const sym = ticker + suffix;
+    const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=1d`;
+
+    // 시도 1: corsproxy.io
     try{
-      const sym = encodeURIComponent(ticker + suffix);
-      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=1d`;
-      const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-      const r = await fetch(proxy);
-      const outer = await r.json();
-      const data = JSON.parse(outer.contents);
-      const price = data?.chart?.result?.[0]?.meta?.regularMarketPrice;
-      if(price && price > 0) return price;
+      const r = await fetch(`https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`);
+      if(r.ok){
+        const d = await r.json();
+        const price = d?.chart?.result?.[0]?.meta?.regularMarketPrice;
+        if(price && price > 0) return price;
+      }
+    }catch{}
+
+    // 시도 2: allorigins
+    try{
+      const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(yahooUrl)}`);
+      if(r.ok){
+        const outer = await r.json();
+        const d = JSON.parse(outer.contents);
+        const price = d?.chart?.result?.[0]?.meta?.regularMarketPrice;
+        if(price && price > 0) return price;
+      }
+    }catch{}
+
+    // 시도 3: thingproxy
+    try{
+      const r = await fetch(`https://thingproxy.freeboard.io/fetch/${yahooUrl}`);
+      if(r.ok){
+        const d = await r.json();
+        const price = d?.chart?.result?.[0]?.meta?.regularMarketPrice;
+        if(price && price > 0) return price;
+      }
     }catch{}
   }
   return null;
@@ -675,6 +698,15 @@ async function fetchPriceForModal(){
       price = await fetchUSPrice(ticker);
     } else if(type==='kr'){
       price = await fetchKRPrice(ticker);
+      if(price===null){
+        // 모든 프록시 실패 시 네이버 금융 링크 안내
+        setFetchStatus('err',`⚠️ 자동 조회 실패 — <a href="https://finance.naver.com/item/main.naver?code=${ticker}" target="_blank" style="color:var(--b5)">네이버 금융에서 확인 →</a>`);
+        document.getElementById('fetch-status').innerHTML = document.getElementById('fetch-status').textContent;
+        document.getElementById('fetch-status').innerHTML = `⚠️ 자동 조회 실패 — <a href="https://finance.naver.com/item/main.naver?code=${ticker}" target="_blank" style="color:var(--b5)">네이버 금융에서 직접 확인 후 입력 →</a>`;
+        btn.disabled = false;
+        document.getElementById('fetch-btn-txt').textContent = '시세 가져오기';
+        return;
+      }
     } else if(type==='crypto'){
       const coinId = COIN_MAP[ticker] || ticker.toLowerCase();
       const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=krw`);
