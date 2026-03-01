@@ -184,6 +184,21 @@ body{font-family:'Pretendard',-apple-system,sans-serif;background:var(--g0);colo
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 
 
+/* 시장 지표 바 */
+.market-bar{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.market-item{background:#fff;border:1px solid var(--g2);border-radius:12px;padding:12px 16px;cursor:pointer;transition:all .2s;flex:1;min-width:110px;box-shadow:var(--sh)}
+.market-item:hover{box-shadow:var(--shm);transform:translateY(-2px);border-color:var(--b5)}
+.market-name{display:block;font-size:10px;font-weight:600;color:var(--g4);letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px}
+.market-price{display:block;font-size:14px;font-weight:700;font-family:'DM Mono',monospace;margin-bottom:2px}
+.market-chg{font-size:11px;font-weight:600}
+.market-chg.up{color:#ef4444}
+.market-chg.down{color:#1d4ed8}
+
+/* 차트 모달 */
+.chart-modal-overlay{position:fixed;inset:0;background:rgba(13,27,62,.5);backdrop-filter:blur(4px);z-index:400;display:flex;align-items:center;justify-content:center}
+.chart-modal{background:#fff;border-radius:20px;width:720px;max-width:95vw;box-shadow:0 20px 60px rgba(13,27,62,.25);overflow:hidden}
+.chart-modal-header{padding:20px 24px;border-bottom:1px solid var(--g1);display:flex;align-items:center;justify-content:space-between}
+
 /* 필터 탭 */
 .filter-tabs{display:flex;gap:6px;padding:16px 24px 0;align-items:center}
 .filter-tab{padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--g2);background:#fff;color:var(--g4);transition:all .15s;font-family:inherit}
@@ -366,6 +381,45 @@ tr.drag-over{border-top:2px solid var(--b5)}
 
   <div class="content">
     <div id="section-dashboard"></div>
+    <!-- 시장 지표 바 -->
+    <div class="market-bar" id="market-bar">
+      <div class="market-item" onclick="showMarketChart('KS11','KOSPI','#ef4444')">
+        <span class="market-name">KOSPI</span>
+        <span class="market-price" id="mkt-KS11">—</span>
+        <span class="market-chg" id="mkt-KS11-c">—</span>
+      </div>
+      <div class="market-item" onclick="showMarketChart('IXIC','NASDAQ','#3b82f6')">
+        <span class="market-name">NASDAQ</span>
+        <span class="market-price" id="mkt-IXIC">—</span>
+        <span class="market-chg" id="mkt-IXIC-c">—</span>
+      </div>
+      <div class="market-item" onclick="showMarketChart('DJI','다우존스','#8b5cf6')">
+        <span class="market-name">DOW</span>
+        <span class="market-price" id="mkt-DJI">—</span>
+        <span class="market-chg" id="mkt-DJI-c">—</span>
+      </div>
+      <div class="market-item" onclick="showMarketChart('S%26P500','S&amp;P500','#f59e0b')">
+        <span class="market-name">S&amp;P500</span>
+        <span class="market-price" id="mkt-SP500">—</span>
+        <span class="market-chg" id="mkt-SP500-c">—</span>
+      </div>
+      <div class="market-item" onclick="showMarketChart('USDKRW','원/달러 환율','#10b981')">
+        <span class="market-name">USD/KRW</span>
+        <span class="market-price" id="mkt-USDKRW">—</span>
+        <span class="market-chg" id="mkt-USDKRW-c">—</span>
+      </div>
+      <div class="market-item" onclick="showMarketChart('GC%3DF','금 (Gold)','#f59e0b')">
+        <span class="market-name">금 (oz)</span>
+        <span class="market-price" id="mkt-GOLD">—</span>
+        <span class="market-chg" id="mkt-GOLD-c">—</span>
+      </div>
+      <div class="market-item" onclick="showMarketChart('SI%3DF','은 (Silver)','#94a3b8')">
+        <span class="market-name">은 (oz)</span>
+        <span class="market-price" id="mkt-SILVER">—</span>
+        <span class="market-chg" id="mkt-SILVER-c">—</span>
+      </div>
+    </div>
+
     <div class="summary-grid">
       <div class="summary-card total"><div class="card-icon">💰</div><div class="card-label">총 자산</div><div class="card-value" id="s-total">—</div><div class="card-change" id="s-total-c">—</div></div>
       <div class="summary-card domestic"><div class="card-icon">🇰🇷</div><div class="card-label">국내 주식</div><div class="card-value" id="s-kr">—</div><div class="card-change" id="s-kr-c">—</div></div>
@@ -441,9 +495,6 @@ tr.drag-over{border-top:2px solid var(--b5)}
 
       <!-- 관심 종목 패널 -->
       <div id="panel-watchlist" style="display:none">
-        <div style="padding:12px 24px 0;display:flex;justify-content:flex-end">
-          <button class="btn-primary" onclick="openWatchModal()" style="font-size:11px;padding:6px 14px">＋ 추가</button>
-        </div>
         <table class="portfolio-table">
           <thead>
             <tr>
@@ -1783,11 +1834,98 @@ function showInfoPanel(type){
   document.body.appendChild(overlay);
 }
 // ────────────────────────────────────────────────
+// 시장 지표 (KOSPI, NASDAQ, 환율, 금/은)
+// ────────────────────────────────────────────────
+const MARKET_SYMBOLS = [
+  {id:'KS11',   sym:'^KS11',    label:'KOSPI',   elP:'mkt-KS11',   elC:'mkt-KS11-c',   fmt:'num'},
+  {id:'IXIC',   sym:'^IXIC',    label:'NASDAQ',  elP:'mkt-IXIC',   elC:'mkt-IXIC-c',   fmt:'num'},
+  {id:'DJI',    sym:'^DJI',     label:'DOW',     elP:'mkt-DJI',    elC:'mkt-DJI-c',    fmt:'num'},
+  {id:'SP500',  sym:'^GSPC',    label:'S&P500',  elP:'mkt-SP500',  elC:'mkt-SP500-c',  fmt:'num'},
+  {id:'USDKRW', sym:'USDKRW=X', label:'USD/KRW', elP:'mkt-USDKRW', elC:'mkt-USDKRW-c', fmt:'fx'},
+  {id:'GOLD',   sym:'GC=F',     label:'금',      elP:'mkt-GOLD',   elC:'mkt-GOLD-c',   fmt:'usd'},
+  {id:'SILVER', sym:'SI=F',     label:'은',      elP:'mkt-SILVER', elC:'mkt-SILVER-c', fmt:'usd'},
+];
+
+async function fetchMarketData(){
+  await Promise.all(MARKET_SYMBOLS.map(async m=>{
+    try{
+      const ctrl = new AbortController();
+      const timer = setTimeout(()=>ctrl.abort(), 8000);
+      const r = await fetch(`${PROXY_URL}/?symbol=${encodeURIComponent(m.sym)}`, {signal:ctrl.signal});
+      clearTimeout(timer);
+      if(!r.ok) return;
+      const d = await r.json();
+      if(!d.price) return;
+      const price = d.price;
+      const prev = d.prevClose || price;
+      const chg = price - prev;
+      const pct = prev ? (chg/prev*100) : 0;
+      const isUp = chg >= 0;
+
+      // 가격 포맷
+      let priceStr;
+      if(m.fmt==='fx') priceStr = price.toLocaleString('ko-KR',{maximumFractionDigits:2});
+      else if(m.fmt==='usd') priceStr = '$'+price.toLocaleString('en-US',{maximumFractionDigits:2});
+      else priceStr = price.toLocaleString('ko-KR',{maximumFractionDigits:2});
+
+      const elP = document.getElementById(m.elP);
+      const elC = document.getElementById(m.elC);
+      if(elP) elP.textContent = priceStr;
+      if(elC){
+        elC.textContent = `${isUp?'▲':'▼'} ${Math.abs(pct).toFixed(2)}%`;
+        elC.className = `market-chg ${isUp?'up':'down'}`;
+      }
+    }catch{}
+  }));
+}
+
+// prevClose 반환하도록 Worker도 업데이트 필요하지만 일단 차트만
+async function showMarketChart(symbolEncoded, label, color){
+  // TradingView 위젯으로 차트 표시
+  const existing = document.getElementById('market-chart-modal');
+  if(existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'market-chart-modal';
+  overlay.className = 'chart-modal-overlay';
+  overlay.onclick = e=>{ if(e.target===overlay) overlay.remove(); };
+
+  const tvSymbolMap = {
+    'KS11': 'KRX:KOSPI',
+    'IXIC': 'NASDAQ:COMP',
+    'DJI': 'DJ:DJI',
+    'S%26P500': 'SP:SPX',
+    'USDKRW': 'FX:USDKRW',
+    'GC%3DF': 'COMEX:GC1!',
+    'SI%3DF': 'COMEX:SI1!',
+  };
+  // symbolEncoded로 TV 심볼 찾기
+  const tvSym = tvSymbolMap[symbolEncoded] || symbolEncoded;
+
+  overlay.innerHTML = `
+    <div class="chart-modal">
+      <div class="chart-modal-header">
+        <div style="font-size:16px;font-weight:700">📈 ${label}</div>
+        <button onclick="document.getElementById('market-chart-modal').remove()"
+          style="background:var(--g1);border:none;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px">✕</button>
+      </div>
+      <div style="height:420px">
+        <iframe
+          src="https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(tvSym)}&interval=D&theme=light&style=1&locale=kr&hide_top_toolbar=0&hide_legend=0&saveimage=0&toolbarbg=f4f7f9&studies=[]&hideideas=1"
+          width="100%" height="100%" frameborder="0" allowtransparency="true" scrolling="no">
+        </iframe>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+}
+
+// ────────────────────────────────────────────────
 // 전체 새로고침
 // ────────────────────────────────────────────────
 async function fetchLive(){
   document.getElementById('api-updated').textContent = '업데이트 중...';
-  await Promise.all([fetchFX(), fetchCrypto(), fetchAllStockPrices()]);
+  await Promise.all([fetchFX(), fetchCrypto(), fetchAllStockPrices(), fetchMarketData()]);
   saveLocal();
   render();
   const n=new Date();
