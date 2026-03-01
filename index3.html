@@ -1864,8 +1864,12 @@ async function fetchMarketData(){
 
       // 가격 포맷
       let priceStr;
-      if(m.fmt==='fx') priceStr = price.toLocaleString('ko-KR',{maximumFractionDigits:2});
-      else if(m.fmt==='usd') priceStr = '$'+price.toLocaleString('en-US',{maximumFractionDigits:2});
+      if(m.fmt==='fx') priceStr = price.toLocaleString('ko-KR',{maximumFractionDigits:2})+'원';
+      else if(m.fmt==='usd'){
+        // 금/은: USD → KRW 환산 (oz 기준)
+        const krwPrice = Math.round(price * usdKrw);
+        priceStr = '₩'+krwPrice.toLocaleString('ko-KR');
+      }
       else priceStr = price.toLocaleString('ko-KR',{maximumFractionDigits:2});
 
       const elP = document.getElementById(m.elP);
@@ -1891,15 +1895,14 @@ async function showMarketChart(symbolEncoded, label, color){
   overlay.onclick = e=>{ if(e.target===overlay) overlay.remove(); };
 
   const tvSymbolMap = {
-    'KS11': 'KRX:KOSPI',
-    'IXIC': 'NASDAQ:COMP',
-    'DJI': 'DJ:DJI',
-    'S%26P500': 'SP:SPX',
-    'USDKRW': 'FX:USDKRW',
-    'GC%3DF': 'COMEX:GC1!',
-    'SI%3DF': 'COMEX:SI1!',
+    'KS11':    'KRX:KOSPI',
+    'IXIC':    'NASDAQ:NDX',
+    'DJI':     'TVC:DJI',
+    'S%26P500':'TVC:SPX',
+    'USDKRW':  'FX_IDC:USDKRW',
+    'GC%3DF':  'TVC:GOLD',
+    'SI%3DF':  'TVC:SILVER',
   };
-  // symbolEncoded로 TV 심볼 찾기
   const tvSym = tvSymbolMap[symbolEncoded] || symbolEncoded;
 
   overlay.innerHTML = `
