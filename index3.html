@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-:root{--b9:#0d1b3e;--b6:#1d4ed8;--b5:#3b82f6;--b4:#60a5fa;--b3:#93c5fd;--b0:#eff6ff;--g0:#f8fafc;--g1:#f1f5f9;--g2:#e2e8f0;--g4:#94a3b8;--g6:#475569;--g8:#1e293b;--gn:#10b981;--rd:#ef4444;--og:#f59e0b;--pu:#8b5cf6;--sh:0 1px 3px rgba(13,27,62,.08);--shm:0 4px 16px rgba(13,27,62,.12);--shl:0 12px 40px rgba(13,27,62,.18);--r:16px;--rs:10px}
+:root{--b9:#0d1b3e;--b6:#1d4ed8;--b5:#3b82f6;--b4:#60a5fa;--b3:#93c5fd;--b0:#eff6ff;--g0:#f8fafc;--g1:#f1f5f9;--g2:#e2e8f0;--g4:#94a3b8;--g6:#475569;--g8:#1e293b;--gn:#ef4444;--rd:#1d4ed8;--og:#f59e0b;--pu:#8b5cf6;--sh:0 1px 3px rgba(13,27,62,.08);--shm:0 4px 16px rgba(13,27,62,.12);--shl:0 12px 40px rgba(13,27,62,.18);--r:16px;--rs:10px}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Pretendard',-apple-system,sans-serif;background:var(--g0);color:var(--g8);min-height:100vh}
 .sidebar{position:fixed;left:0;top:0;width:240px;height:100vh;background:var(--b9);display:flex;flex-direction:column;z-index:100;box-shadow:4px 0 24px rgba(13,27,62,.18)}
@@ -62,8 +62,8 @@ body{font-family:'Pretendard',-apple-system,sans-serif;background:var(--g0);colo
 .card-label{font-size:12px;font-weight:500;color:var(--g4);margin-bottom:10px}
 .card-value{font-size:21px;font-weight:700;font-family:'DM Mono',monospace;letter-spacing:-.5px;margin-bottom:8px}
 .card-change{font-size:12px;font-weight:600}
-.card-change.up{color:var(--gn)}
-.card-change.down{color:var(--rd)}
+.card-change.up{color:#ef4444}
+.card-change.down{color:#1d4ed8}
 .card-icon{position:absolute;right:18px;top:18px;font-size:28px;opacity:.1}
 .main-grid{display:grid;grid-template-columns:1fr 340px;gap:20px;margin-bottom:20px}
 .card{background:#fff;border-radius:var(--r);box-shadow:var(--sh);border:1px solid var(--g2);overflow:hidden}
@@ -127,8 +127,8 @@ body{font-family:'Pretendard',-apple-system,sans-serif;background:var(--g0);colo
 .tx-price{font-size:13px;font-weight:700;font-family:'DM Mono',monospace;text-align:right}
 .tx-qty{font-size:11px;color:var(--g4);margin-top:1px;text-align:right}
 .tag{display:inline-block;padding:3px 9px;border-radius:6px;font-size:11px;font-weight:600}
-.tag-up{background:#d1fae5;color:#059669}
-.tag-down{background:#fee2e2;color:#dc2626}
+.tag-up{background:#fee2e2;color:#dc2626}
+.tag-down{background:#dbeafe;color:#1d4ed8}
 
 /* ── 종목 추가/수정 모달 ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(13,27,62,.45);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
@@ -422,27 +422,152 @@ tr.drag-over{border-top:2px solid var(--b5)}
       <div class="card">
         <div class="card-header">
           <div class="card-title">🪙 실시간 코인 시세</div>
-          <span style="font-size:11px;color:var(--gn);font-weight:500">● LIVE</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;color:#ef4444;font-weight:500">● LIVE</span>
+            <button class="btn-row btn-edit" onclick="openCoinModal()" style="opacity:1;font-size:11px">＋ 코인 추가</button>
+          </div>
         </div>
         <div class="card-body" style="padding-top:10px">
           <table class="portfolio-table">
-            <thead><tr><th>코인</th><th>현재가 (KRW)</th><th>24h 변동</th></tr></thead>
-            <tbody id="coin-body"><tr><td colspan="3" style="text-align:center;color:var(--g4);padding:20px">불러오는 중...</td></tr></tbody>
+            <thead><tr><th>코인</th><th>현재가 (KRW)</th><th>24h 변동</th><th></th></tr></thead>
+            <tbody id="coin-body"><tr><td colspan="4" style="text-align:center;color:var(--g4);padding:20px">불러오는 중...</td></tr></tbody>
           </table>
         </div>
       </div>
       <div class="card">
         <div class="card-header">
-          <div class="card-title">🔄 최근 거래 내역</div>
-          <span style="color:var(--b6);font-size:13px;font-weight:500;cursor:pointer">전체보기 →</span>
+          <div class="card-title">🔄 거래 내역</div>
+          <button class="btn-row btn-edit" onclick="openTxModal()" style="opacity:1;font-size:11px">＋ 거래 추가</button>
         </div>
-        <div class="card-body" style="padding-top:8px">
-          <div class="tx-item"><div class="tx-left"><div class="tx-icon buy">📥</div><div><div class="tx-name">Apple Inc. 매수</div><div class="tx-date">2025.02.24 · AAPL</div></div></div><div><div class="tx-price text-down">-₩924,000</div><div class="tx-qty">4주 × $231.50</div></div></div>
-          <div class="tx-item"><div class="tx-left"><div class="tx-icon sell">📤</div><div><div class="tx-name">삼성전자 매도</div><div class="tx-date">2025.02.22 · 005930</div></div></div><div><div class="tx-price text-up">+₩1,085,000</div><div class="tx-qty">15주 × ₩72,333</div></div></div>
-          <div class="tx-item"><div class="tx-left"><div class="tx-icon deposit">💵</div><div><div class="tx-name">입금</div><div class="tx-date">2025.02.20 · 계좌이체</div></div></div><div><div class="tx-price text-up">+₩5,000,000</div><div class="tx-qty">KRW</div></div></div>
-          <div class="tx-item"><div class="tx-left"><div class="tx-icon buy">📥</div><div><div class="tx-name">이더리움 매수</div><div class="tx-date">2025.02.18 · ETH</div></div></div><div><div class="tx-price text-down">-₩2,572,800</div><div class="tx-qty">0.67 ETH</div></div></div>
+        <div class="card-body" style="padding-top:8px;max-height:300px;overflow-y:auto">
+          <div id="tx-list"><div style="text-align:center;color:var(--g4);padding:24px;font-size:13px">거래 내역이 없어요<br><span style="font-size:11px">＋ 거래 추가 버튼으로 등록하세요</span></div></div>
         </div>
       </div>
+    </div>
+    <!-- 관심 종목 -->
+    <div class="portfolio-card" style="margin-bottom:20px">
+      <div style="padding:20px 24px 16px;border-bottom:1px solid var(--g1);display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:15px;font-weight:700">👀 관심 종목</div>
+          <div style="font-size:12px;color:var(--g4);margin-top:2px" id="watchlist-count">0종목</div>
+        </div>
+        <button class="btn-primary" onclick="openWatchModal()" style="font-size:12px;padding:8px 16px">＋ 추가</button>
+      </div>
+      <table class="portfolio-table">
+        <thead>
+          <tr>
+            <th>종목</th><th>유형</th><th>현재가</th><th>목표가</th><th>메모</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="watchlist-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 관심종목 모달 -->
+<div class="modal-overlay" id="watch-modal-overlay">
+  <div class="modal" id="watch-modal-box">
+    <div class="modal-header">
+      <div class="modal-title" id="watch-modal-title">관심 종목 추가</div>
+      <button class="modal-close" onclick="closeWatchModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">자산 유형</label>
+        <select class="form-select" id="wf-type" onchange="onWatchTypeChange()">
+          <option value="kr">🇰🇷 국내 주식</option>
+          <option value="us">🌏 해외 주식</option>
+          <option value="crypto">🪙 암호화폐</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">종목명</label>
+          <input class="form-input" id="wf-name" placeholder="예: 삼성전자"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label" id="wf-ticker-label">티커/종목코드</label>
+          <div style="display:flex;gap:8px">
+            <input class="form-input" id="wf-ticker" placeholder="예: 005930" style="flex:1"/>
+            <select class="form-select" id="wf-exchange" style="width:100px;display:none">
+              <option value="auto">자동</option>
+              <option value=".KS">코스피</option>
+              <option value=".KQ">코스닥</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">목표가 (₩)</label>
+          <input class="form-input" id="wf-target" type="number" placeholder="0 (선택사항)"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">메모</label>
+          <input class="form-input" id="wf-memo" placeholder="예: 실적 발표 후 매수 검토"/>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-danger" id="wf-btn-delete" style="display:none;margin-right:auto" onclick="deleteWatchItem()">🗑 삭제</button>
+      <button class="btn-secondary" onclick="closeWatchModal()">취소</button>
+      <button class="btn-primary" onclick="saveWatchItem()">💾 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 거래내역 모달 -->
+<div class="modal-overlay" id="tx-modal-overlay">
+  <div class="modal" id="tx-modal-box" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title" id="tx-modal-title">거래 추가</div>
+      <button class="modal-close" onclick="closeTxModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">거래 유형</label>
+          <select class="form-select" id="tf-type">
+            <option value="buy">📥 매수</option>
+            <option value="sell">📤 매도</option>
+            <option value="deposit">💵 입금</option>
+            <option value="withdraw">💸 출금</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">날짜</label>
+          <input class="form-input" id="tf-date" type="date"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">종목명</label>
+          <input class="form-input" id="tf-name" placeholder="예: 삼성전자 (입출금시 생략)"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">티커</label>
+          <input class="form-input" id="tf-ticker" placeholder="예: 005930"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">수량</label>
+          <input class="form-input" id="tf-qty" type="number" step="any" placeholder="0"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">단가 또는 금액 (₩)</label>
+          <input class="form-input" id="tf-price" type="number" step="any" placeholder="0"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">메모</label>
+        <input class="form-input" id="tf-memo" placeholder="선택사항"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeTxModal()">취소</button>
+      <button class="btn-primary" onclick="saveTxItem()">💾 저장</button>
     </div>
   </div>
 </div>
@@ -470,7 +595,14 @@ tr.drag-over{border-top:2px solid var(--b5)}
         </div>
         <div class="form-group">
           <label class="form-label" id="ticker-label">티커/종목코드</label>
-          <input class="form-input" id="f-ticker" placeholder="예: 005930" oninput="resetFetchStatus()"/>
+          <div style="display:flex;gap:8px">
+            <input class="form-input" id="f-ticker" placeholder="예: 005930" oninput="resetFetchStatus()" style="flex:1"/>
+            <select class="form-select" id="f-exchange" style="width:100px;display:none">
+              <option value="auto">자동</option>
+              <option value=".KS">코스피</option>
+              <option value=".KQ">코스닥</option>
+            </select>
+          </div>
         </div>
       </div>
       <div class="form-row">
@@ -523,6 +655,30 @@ tr.drag-over{border-top:2px solid var(--b5)}
   </div>
 </div>
 
+<!-- 코인 추가 모달 -->
+<div class="modal-overlay" id="coin-modal-overlay">
+  <div class="modal" id="coin-modal-box" style="max-width:400px">
+    <div class="modal-header">
+      <div class="modal-title">🪙 관심 코인 관리</div>
+      <button class="modal-close" onclick="closeCoinModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">코인 심볼</label>
+        <div style="display:flex;gap:8px">
+          <input class="form-input" id="coin-input" placeholder="예: BTC, ETH, SOL" style="flex:1" oninput="this.value=this.value.toUpperCase()"/>
+          <button class="btn-primary" onclick="addWatchCoin()" style="padding:10px 16px;font-size:13px">추가</button>
+        </div>
+        <div style="font-size:11px;color:var(--g4);margin-top:6px">지원: BTC, ETH, SOL, XRP, ADA, DOGE, DOT, AVAX, BNB, LINK, UNI, MATIC</div>
+      </div>
+      <div id="watch-coin-list" style="display:flex;flex-direction:column;gap:6px;margin-top:4px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeCoinModal()">닫기</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"><span id="toast-icon">✅</span><span id="toast-msg"></span></div>
 
 <script>
@@ -559,6 +715,54 @@ const GIST_FILE = 'wealthboard1.json';
 const URL_TOKEN = new URLSearchParams(window.location.search).get('token') || '';
 function getToken(){ return URL_TOKEN; }
 const IS_ADMIN = !!URL_TOKEN;
+
+// 관심 코인 목록 (localStorage에 저장)
+let watchCoins = JSON.parse(localStorage.getItem('wb_watchcoins') || '["BTC","ETH","SOL","XRP"]');
+
+function saveWatchCoins(){ localStorage.setItem('wb_watchcoins', JSON.stringify(watchCoins)); }
+
+function openCoinModal(){
+  renderWatchCoinList();
+  document.getElementById('coin-modal-overlay').classList.add('open');
+}
+function closeCoinModal(){
+  document.getElementById('coin-modal-overlay').classList.remove('open');
+  fetchCrypto();
+}
+document.getElementById('coin-modal-overlay').addEventListener('click', e=>{
+  if(e.target===document.getElementById('coin-modal-overlay')) closeCoinModal();
+});
+
+function addWatchCoin(){
+  const sym = document.getElementById('coin-input').value.trim().toUpperCase();
+  if(!sym){ showToast('⚠️','심볼을 입력해주세요'); return; }
+  if(watchCoins.includes(sym)){ showToast('⚠️','이미 추가된 코인이에요'); return; }
+  watchCoins.push(sym);
+  saveWatchCoins();
+  document.getElementById('coin-input').value = '';
+  renderWatchCoinList();
+  showToast('✅', `${sym} 추가됨`);
+}
+
+function removeWatchCoin(sym){
+  watchCoins = watchCoins.filter(c=>c!==sym);
+  saveWatchCoins();
+  renderWatchCoinList();
+}
+
+function renderWatchCoinList(){
+  const el = document.getElementById('watch-coin-list');
+  if(!watchCoins.length){
+    el.innerHTML = '<div style="text-align:center;color:var(--g4);padding:12px;font-size:13px">추가된 코인이 없어요</div>';
+    return;
+  }
+  el.innerHTML = watchCoins.map(sym=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--g0);border-radius:8px">
+      <span style="font-weight:600;font-size:13px">${sym}</span>
+      <button class="btn-row btn-del" onclick="removeWatchCoin('${sym}')" style="opacity:1">삭제</button>
+    </div>
+  `).join('');
+}
 
 let portfolio = [];
 let usdKrw = 1380;
@@ -729,17 +933,19 @@ async function fetchUSPrice(ticker){
 }
 
 // ────────────────────────────────────────────────
-// 국내주식 시세 — 코스닥 먼저, 실패시 코스피
-// (코스닥 종목이 .KS에서 엉뚱한 값 반환하는 문제 방지)
+// 국내주식 시세 — exchange 지정시 해당 거래소만, 없으면 KQ→KS 순
 // ────────────────────────────────────────────────
-async function fetchKRPrice(ticker){
-  // KQ(코스닥) 먼저 시도 — 성공하면 바로 반환
+async function fetchKRPrice(ticker, exchange='auto'){
+  if(exchange === '.KS'){
+    return await yahooFetchVerified(ticker + '.KS', ticker);
+  }
+  if(exchange === '.KQ'){
+    return await yahooFetchVerified(ticker + '.KQ', ticker);
+  }
+  // auto: KQ 먼저, 실패시 KS
   const priceKQ = await yahooFetchVerified(ticker + '.KQ', ticker);
   if(priceKQ) return priceKQ;
-  // KS(코스피) 시도
-  const priceKS = await yahooFetchVerified(ticker + '.KS', ticker);
-  if(priceKS) return priceKS;
-  return null;
+  return await yahooFetchVerified(ticker + '.KS', ticker);
 }
 
 // symbol 검증 포함 조회 — 티커코드가 응답에 포함되는지 확인
@@ -767,30 +973,48 @@ async function yahooFetchVerified(symbol, ticker){
 // ────────────────────────────────────────────────
 async function fetchCrypto(){
   setDot('dot-crypto','loading');
-  const cs = portfolio.filter(p=>p.type==='crypto'&&p.coinId);
-  if(!cs.length){ setDot('dot-crypto','ok'); return; }
+
+  // 보유 코인 + 관심 코인 합치기
+  const portfolioCoinIds = portfolio.filter(p=>p.type==='crypto'&&p.coinId).map(p=>p.coinId);
+  const watchCoinIds = watchCoins.map(sym => COIN_MAP[sym] || sym.toLowerCase());
+  const allIds = [...new Set([...portfolioCoinIds, ...watchCoinIds])];
+
+  if(!allIds.length){ setDot('dot-crypto','ok'); return; }
   try{
-    const ids = [...new Set(cs.map(c=>c.coinId))].join(',');
-    const r = await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=krw&ids=${ids}&price_change_percentage=24h`);
+    const r = await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=krw&ids=${allIds.join(',')}&price_change_percentage=24h`);
     const data = await r.json();
+
+    // 보유 코인 가격 업데이트
     data.forEach(coin=>{
       portfolio.forEach(p=>{ if(p.coinId===coin.id){ p.currentPrice=coin.current_price; p.change24h=coin.price_change_percentage_24h; p.image=coin.image; } });
     });
-    document.getElementById('coin-body').innerHTML = data.map(c=>{
-      const ch=c.price_change_percentage_24h, isUp=ch>=0;
-      return `<tr>
-        <td><div style="display:flex;align-items:center;gap:8px">
-          <img src="${c.image}" width="24" height="24" style="border-radius:50%" onerror="this.style.display='none'">
-          <div><div style="font-size:13px;font-weight:600">${c.name}</div><div class="stock-ticker">${c.symbol.toUpperCase()}</div></div>
-        </div></td>
-        <td class="text-mono">₩${c.current_price.toLocaleString()}</td>
-        <td><span class="tag ${isUp?'tag-up':'tag-down'}">${isUp?'▲':'▼'} ${Math.abs(ch).toFixed(2)}%</span></td>
-      </tr>`;
-    }).join('');
+
+    // 코인 시세 테이블 렌더 (관심 코인 기준)
+    const displayCoins = watchCoins.map(sym=>{
+      const id = COIN_MAP[sym] || sym.toLowerCase();
+      return data.find(c=>c.id===id);
+    }).filter(Boolean);
+
+    if(!displayCoins.length){
+      document.getElementById('coin-body').innerHTML=`<tr><td colspan="4" style="text-align:center;color:var(--g4);padding:20px">코인을 추가해주세요 (＋ 버튼)</td></tr>`;
+    } else {
+      document.getElementById('coin-body').innerHTML = displayCoins.map(c=>{
+        const ch=c.price_change_percentage_24h, isUp=ch>=0;
+        return `<tr>
+          <td><div style="display:flex;align-items:center;gap:8px">
+            <img src="${c.image}" width="24" height="24" style="border-radius:50%" onerror="this.style.display='none'">
+            <div><div style="font-size:13px;font-weight:600">${c.name}</div><div class="stock-ticker">${c.symbol.toUpperCase()}</div></div>
+          </div></td>
+          <td class="text-mono">₩${c.current_price.toLocaleString()}</td>
+          <td><span class="tag ${isUp?'tag-up':'tag-down'}">${isUp?'▲':'▼'} ${Math.abs(ch).toFixed(2)}%</span></td>
+          <td><button class="btn-row btn-del" onclick="removeWatchCoin('${c.symbol.toUpperCase()}');fetchCrypto();" style="opacity:1;font-size:10px">✕</button></td>
+        </tr>`;
+      }).join('');
+    }
     setDot('dot-crypto','ok');
   }catch{
     setDot('dot-crypto','error');
-    document.getElementById('coin-body').innerHTML=`<tr><td colspan="3" style="text-align:center;color:var(--rd);padding:16px">⚠️ API 연결 실패</td></tr>`;
+    document.getElementById('coin-body').innerHTML=`<tr><td colspan="4" style="text-align:center;color:var(--rd);padding:16px">⚠️ API 연결 실패</td></tr>`;
   }
 }
 
@@ -814,7 +1038,7 @@ async function fetchAllStockPrices(){
   setDot('dot-kr','loading');
   let krOk=0;
   await Promise.all(krStocks.map(async p=>{
-    const price = await fetchKRPrice(p.ticker);
+    const price = await fetchKRPrice(p.ticker, p.exchange || 'auto');
     if(price!==null){ p.currentPrice=price; krOk++; }
   }));
   setDot('dot-kr', krOk>0||krStocks.length===0 ? 'ok' : 'error');
@@ -838,7 +1062,8 @@ async function fetchPriceForModal(){
     if(type==='us'){
       price = await fetchUSPrice(ticker);
     } else if(type==='kr'){
-      price = await fetchKRPrice(ticker);
+      const exch = document.getElementById('f-exchange').value;
+      price = await fetchKRPrice(ticker, exch);
       if(price===null){
         // 모든 프록시 실패 시 네이버 금융 링크 안내
         setFetchStatus('err',`⚠️ 자동 조회 실패 — <a href="https://finance.naver.com/item/main.naver?code=${ticker}" target="_blank" style="color:var(--b5)">네이버 금융에서 확인 →</a>`);
@@ -1020,6 +1245,7 @@ function openModal(id=null){
     document.getElementById('f-type').value    = item.type;
     document.getElementById('f-name').value    = item.name;
     document.getElementById('f-ticker').value  = item.ticker;
+    document.getElementById('f-exchange').value = item.exchange || 'auto';
     document.getElementById('f-qty').value     = item.qty;
     document.getElementById('f-avgbuy').value  = item.avgBuy;
     document.getElementById('f-price').value   = item.currentPrice || '';
@@ -1048,6 +1274,7 @@ function onTypeChange(){
   const t = document.getElementById('f-type').value;
   const hint = document.getElementById('modal-hint');
   const badge = document.getElementById('price-live-badge');
+  document.getElementById('f-exchange').style.display = 'none';
   if(t==='crypto'){
     document.getElementById('ticker-label').textContent = '코인 심볼 (BTC, ETH, SOL…)';
     document.getElementById('avgbuy-label').textContent = '평균 매수가 (₩)';
@@ -1061,11 +1288,12 @@ function onTypeChange(){
     badge.style.display='inline';
     hint.innerHTML='💡 <strong>매입가는 원화로 입력</strong>해주세요 (매수 당시 달러×환율). 현재가는 달러로 자동 조회 후 현재 환율로 원화 환산합니다.';
   } else {
-    document.getElementById('ticker-label').textContent = '종목코드 (005930, 035720…)';
+    document.getElementById('ticker-label').textContent = '종목코드 + 거래소';
     document.getElementById('avgbuy-label').textContent = '평균 매수가 (₩)';
     document.getElementById('price-label').childNodes[0].textContent = '현재가 (KRW) ';
+    document.getElementById('f-exchange').style.display = 'block';
     badge.style.display='inline';
-    hint.innerHTML='💡 종목코드 입력 후 <strong>"시세 가져오기"</strong>를 누르면 Yahoo Finance에서 현재 국내 주가를 자동으로 불러옵니다.';
+    hint.innerHTML='💡 종목코드 입력 후 거래소(코스피/코스닥)를 선택하고 <strong>"시세 가져오기"</strong>를 눌러주세요.';
   }
   resetFetchStatus();
 }
@@ -1088,12 +1316,14 @@ function saveItem(){
   const avgBuy = parseFloat(document.getElementById('f-avgbuy').value)||0;  // 항상 원화
   const price  = parseFloat(document.getElementById('f-price').value)||0;   // 해외는 달러, 나머지 원화
   if(!name||!ticker||!qty||!avgBuy){ showToast('⚠️','종목명, 티커, 수량, 매입가를 입력해주세요'); return; }
+  const exchange = document.getElementById('f-exchange').value;
   const item = {
     id: editingId || String(Date.now()),
     type, name, ticker, qty,
-    avgBuy,          // 항상 원화
-    currentPrice: price,  // 해외주식=달러, 국내/코인=원화
+    avgBuy,
+    currentPrice: price,
     color: selColor,
+    ...(type==='kr' && {exchange}),
     ...(type==='crypto' && {coinId: COIN_MAP[ticker] || ticker.toLowerCase()})
   };
   if(editingId){
@@ -1177,6 +1407,211 @@ function switchTab(el,p){
 const pCtx = document.getElementById('pieChart').getContext('2d');
 pieInst = new Chart(pCtx,{type:'doughnut',data:{labels:['국내','해외','코인'],datasets:[{data:[37.9,51.1,11.0],backgroundColor:['#3b82f6','#f59e0b','#8b5cf6'],borderWidth:0,hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw}%`},backgroundColor:'#1e293b',bodyColor:'#fff',padding:10,borderRadius:8}}}});
 
+
+// ────────────────────────────────────────────────
+// 관심 종목 (watchlist)
+// ────────────────────────────────────────────────
+let watchlist = JSON.parse(localStorage.getItem('wb_watchlist') || '[]');
+let watchEditId = null;
+
+function saveWatchlist(){ localStorage.setItem('wb_watchlist', JSON.stringify(watchlist)); }
+
+function openWatchModal(id=null){
+  watchEditId = id;
+  const item = id ? watchlist.find(w=>w.id===id) : null;
+  document.getElementById('watch-modal-title').textContent = id ? '관심 종목 수정' : '관심 종목 추가';
+  document.getElementById('wf-btn-delete').style.display = id ? 'block' : 'none';
+  if(item){
+    document.getElementById('wf-type').value = item.type;
+    document.getElementById('wf-name').value = item.name;
+    document.getElementById('wf-ticker').value = item.ticker;
+    document.getElementById('wf-exchange').value = item.exchange || 'auto';
+    document.getElementById('wf-target').value = item.target || '';
+    document.getElementById('wf-memo').value = item.memo || '';
+  } else {
+    document.getElementById('wf-type').value = 'kr';
+    ['wf-name','wf-ticker','wf-target','wf-memo'].forEach(id=>document.getElementById(id).value='');
+  }
+  onWatchTypeChange();
+  document.getElementById('watch-modal-overlay').classList.add('open');
+}
+function closeWatchModal(){ document.getElementById('watch-modal-overlay').classList.remove('open'); watchEditId=null; }
+document.getElementById('watch-modal-overlay').addEventListener('click', e=>{
+  if(e.target===document.getElementById('watch-modal-overlay')) closeWatchModal();
+});
+
+function onWatchTypeChange(){
+  const t = document.getElementById('wf-type').value;
+  const exEl = document.getElementById('wf-exchange');
+  if(t==='kr'){
+    document.getElementById('wf-ticker-label').textContent = '종목코드';
+    exEl.style.display='block';
+  } else if(t==='us'){
+    document.getElementById('wf-ticker-label').textContent = '티커 심볼';
+    exEl.style.display='none';
+  } else {
+    document.getElementById('wf-ticker-label').textContent = '코인 심볼';
+    exEl.style.display='none';
+  }
+}
+
+function saveWatchItem(){
+  const type = document.getElementById('wf-type').value;
+  const name = document.getElementById('wf-name').value.trim();
+  const ticker = document.getElementById('wf-ticker').value.trim().toUpperCase();
+  const target = parseFloat(document.getElementById('wf-target').value)||0;
+  const memo = document.getElementById('wf-memo').value.trim();
+  const exchange = document.getElementById('wf-exchange').value;
+  if(!name||!ticker){ showToast('⚠️','종목명과 티커를 입력해주세요'); return; }
+  const item = { id: watchEditId||String(Date.now()), type, name, ticker, target, memo, currentPrice:0,
+    ...(type==='kr'&&{exchange}),
+    ...(type==='crypto'&&{coinId: COIN_MAP[ticker]||ticker.toLowerCase()})
+  };
+  if(watchEditId){
+    const i=watchlist.findIndex(w=>w.id===watchEditId); if(i!==-1) watchlist[i]=item;
+    showToast('✅',`${name} 수정됨`);
+  } else {
+    watchlist.push(item);
+    showToast('✅',`${name} 관심 종목 추가됨`);
+  }
+  saveWatchlist();
+  closeWatchModal();
+  fetchWatchlistPrices();
+}
+
+function deleteWatchItem(){
+  if(!watchEditId) return;
+  const item = watchlist.find(w=>w.id===watchEditId);
+  showConfirm(`"${item?.name}" 관심 종목을 삭제할까요?`, ()=>{
+    watchlist = watchlist.filter(w=>w.id!==watchEditId);
+    saveWatchlist();
+    closeWatchModal();
+    renderWatchlist();
+    showToast('🗑️','삭제됨');
+  });
+}
+
+async function fetchWatchlistPrices(){
+  await Promise.all(watchlist.map(async w=>{
+    if(w.type==='kr') w.currentPrice = await fetchKRPrice(w.ticker, w.exchange||'auto') || w.currentPrice;
+    else if(w.type==='us') w.currentPrice = await fetchUSPrice(w.ticker) || w.currentPrice;
+    else if(w.type==='crypto'){
+      const id = w.coinId||COIN_MAP[w.ticker]||w.ticker.toLowerCase();
+      try{
+        const r=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=krw`);
+        const d=await r.json(); w.currentPrice=d[id]?.krw||w.currentPrice;
+      }catch{}
+    }
+  }));
+  renderWatchlist();
+}
+
+function renderWatchlist(){
+  setTxt('watchlist-count',`${watchlist.length}종목`);
+  const el = document.getElementById('watchlist-body');
+  if(!watchlist.length){
+    el.innerHTML=`<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">👀</div><div class="empty-title">관심 종목이 없어요</div><div class="empty-sub">＋ 추가 버튼으로 등록해보세요</div></div></td></tr>`;
+    return;
+  }
+  el.innerHTML = watchlist.map(w=>{
+    const badge = w.type==='kr'?'badge-kr':w.type==='us'?'badge-us':'badge-crypto';
+    const bTxt = w.type==='kr'?'국내':w.type==='us'?'해외':'코인';
+    const prKrw = w.type==='us' && w.currentPrice>0 ? Math.round(w.currentPrice*usdKrw) : Math.round(w.currentPrice||0);
+    const prStr = prKrw>0 ? `₩${prKrw.toLocaleString()}` : '—';
+    const tgtStr = w.target>0 ? `₩${Math.round(w.target).toLocaleString()}` : '—';
+    const tgtPct = w.target>0 && prKrw>0 ? ((w.target-prKrw)/prKrw*100).toFixed(1) : null;
+    const tgtDisp = tgtPct!==null ? `${tgtStr} <span style="font-size:11px;color:${tgtPct>=0?'#ef4444':'#1d4ed8'}">(${tgtPct>=0?'+':''}${tgtPct}%)</span>` : tgtStr;
+    return `<tr>
+      <td><div class="stock-info">
+        <div class="stock-badge" style="background:var(--g4)">${w.name[0]}</div>
+        <div><div class="stock-name">${w.name}</div><div class="stock-ticker">${w.ticker}</div></div>
+      </div></td>
+      <td><span class="badge-type ${badge}">${bTxt}</span></td>
+      <td class="text-mono">${prStr}</td>
+      <td class="text-mono">${tgtDisp}</td>
+      <td style="font-size:12px;color:var(--g6);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${w.memo||'—'}</td>
+      <td><div class="row-actions" style="opacity:1">
+        <button class="btn-row btn-edit" onclick="openWatchModal('${w.id}')">수정</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ────────────────────────────────────────────────
+// 거래 내역
+// ────────────────────────────────────────────────
+let txList = JSON.parse(localStorage.getItem('wb_txlist') || '[]');
+function saveTxList(){ localStorage.setItem('wb_txlist', JSON.stringify(txList)); }
+
+function openTxModal(){
+  document.getElementById('tf-date').value = new Date().toISOString().split('T')[0];
+  ['tf-name','tf-ticker','tf-qty','tf-price','tf-memo'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('tf-type').value='buy';
+  document.getElementById('tx-modal-overlay').classList.add('open');
+}
+function closeTxModal(){ document.getElementById('tx-modal-overlay').classList.remove('open'); }
+document.getElementById('tx-modal-overlay').addEventListener('click', e=>{
+  if(e.target===document.getElementById('tx-modal-overlay')) closeTxModal();
+});
+
+function saveTxItem(){
+  const type = document.getElementById('tf-type').value;
+  const date = document.getElementById('tf-date').value;
+  const name = document.getElementById('tf-name').value.trim();
+  const ticker = document.getElementById('tf-ticker').value.trim().toUpperCase();
+  const qty = parseFloat(document.getElementById('tf-qty').value)||0;
+  const price = parseFloat(document.getElementById('tf-price').value)||0;
+  const memo = document.getElementById('tf-memo').value.trim();
+  if(!date||!price){ showToast('⚠️','날짜와 금액을 입력해주세요'); return; }
+  const total = (type==='deposit'||type==='withdraw') ? price : qty*price;
+  const item = { id:String(Date.now()), type, date, name, ticker, qty, price, total, memo };
+  txList.unshift(item);
+  saveTxList();
+  closeTxModal();
+  renderTxList();
+  showToast('✅','거래 내역 추가됨');
+}
+
+function deleteTx(id){
+  showConfirm('이 거래 내역을 삭제할까요?', ()=>{
+    txList = txList.filter(t=>t.id!==id);
+    saveTxList();
+    renderTxList();
+    showToast('🗑️','삭제됨');
+  });
+}
+
+function renderTxList(){
+  const el = document.getElementById('tx-list');
+  if(!txList.length){
+    el.innerHTML='<div style="text-align:center;color:var(--g4);padding:24px;font-size:13px">거래 내역이 없어요<br><span style="font-size:11px">＋ 거래 추가 버튼으로 등록하세요</span></div>';
+    return;
+  }
+  const icons = {buy:'📥',sell:'📤',deposit:'💵',withdraw:'💸'};
+  const labels = {buy:'매수',sell:'매도',deposit:'입금',withdraw:'출금'};
+  el.innerHTML = txList.slice(0,20).map(t=>{
+    const isBuy = t.type==='buy'||t.type==='deposit';
+    const sign = isBuy?'-':'+';
+    const cls = isBuy?'text-down':'text-up';
+    const dateStr = t.date.replace(/-/g,'.');
+    const nameStr = t.name ? `${t.name} ${labels[t.type]}` : labels[t.type];
+    const subStr = t.ticker ? `${dateStr} · ${t.ticker}` : dateStr;
+    const qtyStr = t.qty>0 ? `${t.qty}주 × ₩${Math.round(t.price).toLocaleString()}` : `₩${Math.round(t.price).toLocaleString()}`;
+    return `<div class="tx-item">
+      <div class="tx-left">
+        <div class="tx-icon ${t.type==='buy'?'buy':t.type==='sell'?'sell':'deposit'}">${icons[t.type]}</div>
+        <div><div class="tx-name">${nameStr}</div><div class="tx-date">${subStr}</div></div>
+      </div>
+      <div style="text-align:right">
+        <div class="tx-price ${cls}">${sign}₩${Math.round(t.total).toLocaleString()}</div>
+        <div class="tx-qty" style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
+          ${qtyStr}
+          <button onclick="deleteTx('${t.id}')" style="background:none;border:none;cursor:pointer;color:var(--g4);font-size:12px;padding:0" title="삭제">✕</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
 // ────────────────────────────────────────────────
 // 전체 새로고침
 // ────────────────────────────────────────────────
@@ -1194,7 +1629,11 @@ async function fetchLive(){
 (async ()=>{
   await loadFromGist();
   await fetchLive();
+  renderTxList();
+  renderWatchlist();
+  fetchWatchlistPrices();
   setInterval(fetchLive, 60000);
+  setInterval(fetchWatchlistPrices, 60000);
 })();
 </script>
 </body>
