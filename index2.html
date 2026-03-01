@@ -754,8 +754,10 @@ async function yahooFetchVerified(symbol, ticker){
     if(d.error || !d.price || d.price <= 0) return null;
     // 검증 1: symbol이 ticker로 시작해야 함
     if(d.symbol && !d.symbol.startsWith(ticker)) return null;
-    // 검증 2: name이 비어있으면 엉뚱한 종목 (예: 196170.KS → name:"")
+    // 검증 2: name이 비어있으면 엉뚱한 종목
     if(!d.name || d.name.trim() === '') return null;
+    // 검증 3: 통화가 KRW인지 확인 (USD 등이면 엉뚱한 종목)
+    if(d.currency && d.currency !== 'KRW') return null;
     return d.price;
   }catch{ return null; }
 }
