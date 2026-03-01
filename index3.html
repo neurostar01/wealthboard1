@@ -1884,26 +1884,27 @@ async function fetchMarketData(){
 }
 
 // prevClose 반환하도록 Worker도 업데이트 필요하지만 일단 차트만
-async function showMarketChart(symbolEncoded, label, color){
-  // TradingView 위젯으로 차트 표시
+function showMarketChart(symbolEncoded, label, color){
   const existing = document.getElementById('market-chart-modal');
   if(existing) existing.remove();
 
-  const overlay = document.createElement('div');
-  overlay.id = 'market-chart-modal';
-  overlay.className = 'chart-modal-overlay';
-  overlay.onclick = e=>{ if(e.target===overlay) overlay.remove(); };
-
+  // TradingView 공식 위젯 심볼맵
   const tvSymbolMap = {
     'KS11':    'KRX:KOSPI',
     'IXIC':    'NASDAQ:NDX',
     'DJI':     'TVC:DJI',
-    'S%26P500':'TVC:SPX',
+    'S%26P500':'SP:SPX',
     'USDKRW':  'FX_IDC:USDKRW',
     'GC%3DF':  'TVC:GOLD',
     'SI%3DF':  'TVC:SILVER',
   };
   const tvSym = tvSymbolMap[symbolEncoded] || symbolEncoded;
+  const containerId = 'tv-widget-' + Date.now();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'market-chart-modal';
+  overlay.className = 'chart-modal-overlay';
+  overlay.onclick = e=>{ if(e.target===overlay) overlay.remove(); };
 
   overlay.innerHTML = `
     <div class="chart-modal">
@@ -1912,15 +1913,52 @@ async function showMarketChart(symbolEncoded, label, color){
         <button onclick="document.getElementById('market-chart-modal').remove()"
           style="background:var(--g1);border:none;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px">✕</button>
       </div>
-      <div style="height:420px">
-        <iframe
-          src="https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(tvSym)}&interval=D&theme=light&style=1&locale=kr&hide_top_toolbar=0&hide_legend=0&saveimage=0&toolbarbg=f4f7f9&studies=[]&hideideas=1"
-          width="100%" height="100%" frameborder="0" allowtransparency="true" scrolling="no">
-        </iframe>
-      </div>
+      <div id="${containerId}" style="height:440px"></div>
     </div>`;
 
   document.body.appendChild(overlay);
+
+  // TradingView 공식 Advanced Chart 위젯
+  const script = document.createElement('script');
+  script.src = 'https://s3.tradingview.com/tv.js';
+  script.onload = () => {
+    new TradingView.widget({
+      container_id: containerId,
+      symbol: tvSym,
+      interval: 'D',
+      timezone: 'Asia/Seoul',
+      theme: 'light',
+      style: '1',
+      locale: 'kr',
+      toolbar_bg: '#f4f7f9',
+      enable_publishing: false,
+      hide_top_toolbar: false,
+      hide_legend: false,
+      save_image: false,
+      height: 440,
+      width: '100%',
+    });
+  };
+  // 이미 로드된 경우
+  if(window.TradingView){
+    new TradingView.widget({
+      container_id: containerId,
+      symbol: tvSym,
+      interval: 'D',
+      timezone: 'Asia/Seoul',
+      theme: 'light',
+      style: '1',
+      locale: 'kr',
+      toolbar_bg: '#f4f7f9',
+      enable_publishing: false,
+      hide_top_toolbar: false,
+      save_image: false,
+      height: 440,
+      width: '100%',
+    });
+  } else {
+    document.head.appendChild(script);
+  }
 }
 
 // ────────────────────────────────────────────────
