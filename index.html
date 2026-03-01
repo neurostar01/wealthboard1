@@ -703,46 +703,21 @@ async function fetchFX(){
 
 // ────────────────────────────────────────────────
 // ────────────────────────────────────────────────
-// Yahoo Finance 공통 호출 — 프록시 순차 시도
+// Yahoo Finance 공통 호출 — 전용 Cloudflare Worker 프록시
 // ────────────────────────────────────────────────
+const PROXY_URL = 'https://yahoo-proxy.medi0204.workers.dev';
+
 async function yahooFetch(symbol){
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`;
-
-  // 각 프록시별 파싱 방법 정의
-  const proxies = [
-    {
-      // allorigins: {contents:"JSON문자열"} 래퍼
-      url: `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
-      parse: raw => JSON.parse(raw.contents)
-    },
-    {
-      // corsproxy: JSON 직접 반환
-      url: `https://corsproxy.io/?${encodeURIComponent(url)}`,
-      parse: raw => raw
-    },
-    {
-      // codetabs: JSON 직접 반환 (rate limit 있음)
-      url: `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-      parse: raw => raw
-    },
-  ];
-
-  for(const proxy of proxies){
-    try{
-      const ctrl = new AbortController();
-      const timer = setTimeout(()=>ctrl.abort(), 7000);
-      const r = await fetch(proxy.url, {signal: ctrl.signal});
-      clearTimeout(timer);
-      if(!r.ok) continue;
-      const raw = await r.json();
-      // 에러 응답 체크 (codetabs Too Many Requests 등)
-      if(raw?.error || raw?.message) continue;
-      const d = proxy.parse(raw);
-      const price = d?.chart?.result?.[0]?.meta?.regularMarketPrice;
-      if(price && price > 0) return price;
-    }catch{}
-  }
-  return null;
+  try{
+    const ctrl = new AbortController();
+    const timer = setTimeout(()=>ctrl.abort(), 8000);
+    const r = await fetch(`${PROXY_URL}/?symbol=${encodeURIComponent(symbol)}`, {signal: ctrl.signal});
+    clearTimeout(timer);
+    if(!r.ok) return null;
+    const d = await r.json();
+    if(d.error) return null;
+    return d.price ?? null;
+  }catch{ return null; }
 }
 
 // ────────────────────────────────────────────────
