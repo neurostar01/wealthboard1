@@ -185,7 +185,7 @@ body{font-family:'Pretendard',-apple-system,sans-serif;background:var(--g0);colo
 
 
 /* 필터 탭 */
-.filter-tabs{display:flex;gap:6px;padding:16px 24px 0}
+.filter-tabs{display:flex;gap:6px;padding:16px 24px 0;align-items:center}
 .filter-tab{padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--g2);background:#fff;color:var(--g4);transition:all .15s;font-family:inherit}
 .filter-tab.active{background:var(--b6);color:#fff;border-color:var(--b6)}
 /* 드래그 */
@@ -315,16 +315,23 @@ tr.drag-over{border-top:2px solid var(--b5)}
       <div><div class="logo-text">WealthBoard</div><div class="logo-sub">자산관리 대시보드</div></div>
     </div>
   </div>
-  <div class="sidebar-nav">
+  <div class="sidebar-nav" style="overflow-y:auto">
     <div class="nav-label">메인</div>
-    <div class="nav-item active"><span class="nav-icon">🏠</span> 대시보드</div>
-    <div class="nav-item"><span class="nav-icon">💼</span> 포트폴리오</div>
-    <div class="nav-item"><span class="nav-icon">📊</span> 수익 분석</div>
+    <div class="nav-item active" id="nav-dashboard" onclick="navTo('dashboard')"><span class="nav-icon">🏠</span> 대시보드</div>
+    <div class="nav-item" id="nav-portfolio" onclick="navTo('portfolio')"><span class="nav-icon">💼</span> 포트폴리오</div>
+    <div class="nav-item" id="nav-analysis" onclick="navTo('analysis')"><span class="nav-icon">📊</span> 수익 분석</div>
+    <div class="nav-label">보유/관심</div>
+    <div class="nav-item" id="nav-holdings" onclick="navTo('holdings')"><span class="nav-icon">📋</span> 보유 종목</div>
+    <div class="nav-item" id="nav-watchlist" onclick="navTo('watchlist')"><span class="nav-icon">👀</span> 관심 종목</div>
     <div class="nav-label">관리</div>
-    <div class="nav-item" onclick="openModal()"><span class="nav-icon">➕</span> 종목 추가</div>
-    <div class="nav-item"><span class="nav-icon">🔄</span> 거래 내역</div>
-    <div class="nav-label">설정</div>
-    <div class="nav-item"><span class="nav-icon">⚙️</span> 환경설정</div>
+    <div class="nav-item" id="nav-add" onclick="openModal()"><span class="nav-icon">➕</span> 종목 추가</div>
+    <div class="nav-item" id="nav-tx" onclick="navTo('tx')"><span class="nav-icon">🔄</span> 거래 내역</div>
+    <div class="nav-label">뉴스 & 정보</div>
+    <div class="nav-item" onclick="window.open('https://finance.naver.com/news/mainnews.naver','_blank')"><span class="nav-icon">📰</span> 네이버 금융뉴스</div>
+    <div class="nav-item" onclick="window.open('https://www.hankyung.com/economy','_blank')"><span class="nav-icon">📈</span> 한국경제</div>
+    <div class="nav-item" onclick="window.open('https://www.mk.co.kr/economy/finance','_blank')"><span class="nav-icon">💹</span> 매일경제</div>
+    <div class="nav-item" onclick="window.open('https://investing.com/news/stock-market-news','_blank')"><span class="nav-icon">🌐</span> Investing.com</div>
+    <div class="nav-item" onclick="window.open('https://finance.yahoo.com/news','_blank')"><span class="nav-icon">🇺🇸</span> Yahoo Finance</div>
   </div>
   <div class="sidebar-footer">
     <div class="user-card">
@@ -358,6 +365,7 @@ tr.drag-over{border-top:2px solid var(--b5)}
   </div>
 
   <div class="content">
+    <div id="section-dashboard"></div>
     <div class="summary-grid">
       <div class="summary-card total"><div class="card-icon">💰</div><div class="card-label">총 자산</div><div class="card-value" id="s-total">—</div><div class="card-change" id="s-total-c">—</div></div>
       <div class="summary-card domestic"><div class="card-icon">🇰🇷</div><div class="card-label">국내 주식</div><div class="card-value" id="s-kr">—</div><div class="card-change" id="s-kr-c">—</div></div>
@@ -391,33 +399,63 @@ tr.drag-over{border-top:2px solid var(--b5)}
       </div>
     </div>
 
-    <!-- 보유 종목 -->
-    <div class="portfolio-card">
-      <div style="padding:20px 24px 16px;border-bottom:1px solid var(--g1);display:flex;align-items:center;justify-content:space-between">
-        <div>
-          <div style="font-size:15px;font-weight:700">💼 보유 종목</div>
-          <div style="font-size:12px;color:var(--g4);margin-top:2px" id="portfolio-count">0종목</div>
+    <div id="section-holdings"></div>
+    <div id="section-watchlist"></div>
+    <!-- 보유/관심 종목 탭 통합 -->
+    <div class="portfolio-card" style="margin-bottom:20px">
+      <div style="padding:0 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--g1)">
+        <div style="display:flex;gap:0">
+          <button id="htab-holdings" onclick="switchHoldingsTab('holdings')"
+            style="padding:16px 20px;font-size:14px;font-weight:700;background:none;border:none;border-bottom:2px solid var(--b6);color:var(--b6);cursor:pointer;font-family:inherit;white-space:nowrap">
+            💼 보유 <span id="portfolio-count" style="font-size:11px;color:var(--g4);font-weight:500">0</span>
+          </button>
+          <button id="htab-watchlist" onclick="switchHoldingsTab('watchlist')"
+            style="padding:16px 20px;font-size:14px;font-weight:700;background:none;border:none;border-bottom:2px solid transparent;color:var(--g4);cursor:pointer;font-family:inherit;white-space:nowrap">
+            👀 관심 <span id="watchlist-count" style="font-size:11px;color:var(--g4);font-weight:500">0</span>
+          </button>
         </div>
-        <button class="btn-primary" onclick="openModal()" style="font-size:12px;padding:8px 16px">＋ 종목 추가</button>
+        <div id="holdings-action-btn">
+          <button class="btn-primary" onclick="openModal()" style="font-size:11px;padding:6px 14px">＋ 종목 추가</button>
+        </div>
       </div>
-      <div class="filter-tabs">
-        <button class="filter-tab active" onclick="setFilter('all',this)">전체</button>
-        <button class="filter-tab" onclick="setFilter('kr',this)">🇰🇷 국내</button>
-        <button class="filter-tab" onclick="setFilter('us',this)">🌏 해외</button>
-        <button class="filter-tab" onclick="setFilter('crypto',this)">🪙 코인</button>
+
+      <!-- 보유 종목 패널 -->
+      <div id="panel-holdings">
+        <div class="filter-tabs">
+          <button class="filter-tab active" onclick="setFilter('all',this)">전체</button>
+          <button class="filter-tab" onclick="setFilter('kr',this)">🇰🇷 국내</button>
+          <button class="filter-tab" onclick="setFilter('us',this)">🌏 해외</button>
+          <button class="filter-tab" onclick="setFilter('crypto',this)">🪙 코인</button>
+        </div>
+        <table class="portfolio-table">
+          <thead>
+            <tr>
+              <th style="width:32px"></th>
+              <th>종목</th><th>유형</th><th>현재가</th><th>보유수량</th>
+              <th>매입가(₩)</th><th>평가금액</th><th>수익률</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="portfolio-body"></tbody>
+        </table>
       </div>
-      <table class="portfolio-table">
-        <thead>
-          <tr>
-            <th style="width:32px"></th>
-            <th>종목</th><th>유형</th><th>현재가</th><th>보유수량</th>
-            <th>매입가(₩)</th><th>평가금액</th><th>수익률</th><th></th>
-          </tr>
-        </thead>
-        <tbody id="portfolio-body"></tbody>
-      </table>
+
+      <!-- 관심 종목 패널 -->
+      <div id="panel-watchlist" style="display:none">
+        <div style="padding:12px 24px 0;display:flex;justify-content:flex-end">
+          <button class="btn-primary" onclick="openWatchModal()" style="font-size:11px;padding:6px 14px">＋ 추가</button>
+        </div>
+        <table class="portfolio-table">
+          <thead>
+            <tr>
+              <th>종목</th><th>유형</th><th>현재가</th><th>목표가</th><th>메모</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="watchlist-body"></tbody>
+        </table>
+      </div>
     </div>
 
+    <div id="section-tx"></div>
     <div class="bottom-grid">
       <div class="card">
         <div class="card-header">
@@ -444,24 +482,7 @@ tr.drag-over{border-top:2px solid var(--b5)}
         </div>
       </div>
     </div>
-    <!-- 관심 종목 -->
-    <div class="portfolio-card" style="margin-bottom:20px">
-      <div style="padding:20px 24px 16px;border-bottom:1px solid var(--g1);display:flex;align-items:center;justify-content:space-between">
-        <div>
-          <div style="font-size:15px;font-weight:700">👀 관심 종목</div>
-          <div style="font-size:12px;color:var(--g4);margin-top:2px" id="watchlist-count">0종목</div>
-        </div>
-        <button class="btn-primary" onclick="openWatchModal()" style="font-size:12px;padding:8px 16px">＋ 추가</button>
-      </div>
-      <table class="portfolio-table">
-        <thead>
-          <tr>
-            <th>종목</th><th>유형</th><th>현재가</th><th>목표가</th><th>메모</th><th></th>
-          </tr>
-        </thead>
-        <tbody id="watchlist-body"></tbody>
-      </table>
-    </div>
+
   </div>
 </div>
 
@@ -1611,6 +1632,155 @@ function renderTxList(){
       </div>
     </div>`;
   }).join('');
+}
+
+// ────────────────────────────────────────────────
+// 네비게이션
+// ────────────────────────────────────────────────
+function navTo(section){
+  // 모든 nav active 해제
+  document.querySelectorAll('.nav-item[id^="nav-"]').forEach(el=>el.classList.remove('active'));
+  const navEl = document.getElementById('nav-'+section);
+  if(navEl) navEl.classList.add('active');
+
+  // 특수 패널 (포트폴리오, 수익분석)
+  if(section==='portfolio' || section==='analysis'){
+    showInfoPanel(section);
+    return;
+  }
+
+  // 탭 전환
+  if(section==='watchlist') switchHoldingsTab('watchlist');
+  if(section==='holdings')  switchHoldingsTab('holdings');
+
+  // 스크롤
+  const target = {
+    dashboard: 'section-dashboard',
+    holdings:  'section-holdings',
+    watchlist: 'section-holdings',
+    tx:        'section-tx',
+  }[section];
+  if(target){
+    const el = document.getElementById(target);
+    if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+  }
+}
+
+function switchHoldingsTab(tab){
+  const isHoldings = tab==='holdings';
+  document.getElementById('panel-holdings').style.display = isHoldings ? '' : 'none';
+  document.getElementById('panel-watchlist').style.display = isHoldings ? 'none' : '';
+  document.getElementById('htab-holdings').style.borderBottomColor = isHoldings ? 'var(--b6)' : 'transparent';
+  document.getElementById('htab-holdings').style.color = isHoldings ? 'var(--b6)' : 'var(--g4)';
+  document.getElementById('htab-watchlist').style.borderBottomColor = isHoldings ? 'transparent' : 'var(--b6)';
+  document.getElementById('htab-watchlist').style.color = isHoldings ? 'var(--g4)' : 'var(--b6)';
+  document.getElementById('holdings-action-btn').innerHTML = isHoldings
+    ? '<button class="btn-primary" onclick="openModal()" style="font-size:11px;padding:6px 14px">＋ 종목 추가</button>'
+    : '<button class="btn-primary" onclick="openWatchModal()" style="font-size:11px;padding:6px 14px">＋ 추가</button>';
+}
+
+// ────────────────────────────────────────────────
+// 포트폴리오 / 수익분석 요약 패널
+// ────────────────────────────────────────────────
+function showInfoPanel(type){
+  const overlay = document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(13,27,62,.5);backdrop-filter:blur(4px);z-index:300;display:flex;align-items:center;justify-content:center';
+  overlay.onclick = e=>{ if(e.target===overlay) document.body.removeChild(overlay); };
+
+  const box = document.createElement('div');
+  box.style.cssText='background:#fff;border-radius:20px;width:680px;max-width:95vw;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(13,27,62,.25)';
+
+  if(type==='portfolio'){
+    const kr = portfolio.filter(p=>p.type==='kr');
+    const us = portfolio.filter(p=>p.type==='us');
+    const cr = portfolio.filter(p=>p.type==='crypto');
+    const krT = kr.reduce((s,p)=>s+p.qty*p.currentPrice,0);
+    const usT = us.reduce((s,p)=>s+p.qty*p.currentPrice*usdKrw,0);
+    const crT = cr.reduce((s,p)=>s+p.qty*p.currentPrice,0);
+    const tot = krT+usT+crT;
+    const krC = kr.reduce((s,p)=>s+p.qty*p.avgBuy,0);
+    const usC = us.reduce((s,p)=>s+p.qty*p.avgBuy,0);
+    const crC = cr.reduce((s,p)=>s+p.qty*p.avgBuy,0);
+    const totC = krC+usC+crC;
+    const totPct = totC ? ((tot-totC)/totC*100).toFixed(2) : 0;
+
+    box.innerHTML = `
+      <div style="padding:24px 28px;border-bottom:1px solid var(--g1);display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:18px;font-weight:700">💼 포트폴리오 요약</div>
+        <button onclick="this.closest('[style*=fixed]').remove()" style="background:var(--g1);border:none;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px">✕</button>
+      </div>
+      <div style="padding:24px 28px">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px">
+          ${[
+            ['총 평가금액','💰',`₩${Math.round(tot).toLocaleString()}`,`${totPct>=0?'+':''}${totPct}%`,totPct>=0],
+            ['국내 주식','🇰🇷',`₩${Math.round(krT).toLocaleString()}`,tot?`${(krT/tot*100).toFixed(1)}%`:'-',true],
+            ['해외 주식','🌏',`₩${Math.round(usT).toLocaleString()}`,tot?`${(usT/tot*100).toFixed(1)}%`:'-',true],
+            ['암호화폐','₿',`₩${Math.round(crT).toLocaleString()}`,tot?`${(crT/tot*100).toFixed(1)}%`:'-',true],
+            ['총 매입금액','💳',`₩${Math.round(totC).toLocaleString()}`,'기준금액',true],
+            ['평가손익','📊',`${tot-totC>=0?'+':''}₩${Math.round(tot-totC).toLocaleString()}`,`${totPct>=0?'+':''}${totPct}%`,tot-totC>=0],
+          ].map(([label,icon,val,sub,isUp])=>`
+            <div style="background:var(--g0);border-radius:12px;padding:16px">
+              <div style="font-size:11px;color:var(--g4);margin-bottom:6px">${icon} ${label}</div>
+              <div style="font-size:16px;font-weight:700;font-family:'DM Mono',monospace">${val}</div>
+              <div style="font-size:12px;font-weight:600;color:${isUp&&sub.includes('%')?'#ef4444':sub.includes('%')&&!isUp?'#1d4ed8':'var(--g4)'};margin-top:4px">${sub}</div>
+            </div>
+          `).join('')}
+        </div>
+        <div style="font-size:14px;font-weight:700;margin-bottom:12px">종목별 비중</div>
+        ${portfolio.map(p=>{
+          const evalKrw = p.type==='us' ? p.qty*p.currentPrice*usdKrw : p.qty*p.currentPrice;
+          const pct = tot ? (evalKrw/tot*100).toFixed(1) : 0;
+          const cost = p.qty*p.avgBuy;
+          const gain = evalKrw-cost;
+          const gainPct = cost ? (gain/cost*100).toFixed(2) : 0;
+          return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--g1)">
+            <div style="width:36px;height:36px;border-radius:10px;background:${p.color};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;flex-shrink:0">${p.name[0]}</div>
+            <div style="flex:1"><div style="font-size:13px;font-weight:600">${p.name}</div><div style="font-size:11px;color:var(--g4)">${p.ticker}</div></div>
+            <div style="text-align:right">
+              <div style="font-size:13px;font-weight:600;font-family:'DM Mono',monospace">₩${Math.round(evalKrw).toLocaleString()}</div>
+              <div style="font-size:11px;color:${gainPct>=0?'#ef4444':'#1d4ed8'};font-weight:600">${gainPct>=0?'▲':'▼'} ${Math.abs(gainPct)}%</div>
+            </div>
+            <div style="width:48px;text-align:right;font-size:12px;color:var(--g4)">${pct}%</div>
+          </div>`;
+        }).join('')}
+      </div>`;
+  } else {
+    // 수익 분석
+    const allItems = portfolio.filter(p=>p.currentPrice>0);
+    const sorted = [...allItems].sort((a,b)=>{
+      const ga = (a.type==='us'?a.qty*a.currentPrice*usdKrw:a.qty*a.currentPrice) - a.qty*a.avgBuy;
+      const gb = (b.type==='us'?b.qty*b.currentPrice*usdKrw:b.qty*b.currentPrice) - b.qty*b.avgBuy;
+      return gb-ga;
+    });
+    box.innerHTML = `
+      <div style="padding:24px 28px;border-bottom:1px solid var(--g1);display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:18px;font-weight:700">📊 수익 분석</div>
+        <button onclick="this.closest('[style*=fixed]').remove()" style="background:var(--g1);border:none;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px">✕</button>
+      </div>
+      <div style="padding:24px 28px">
+        <div style="font-size:14px;font-weight:700;margin-bottom:12px">수익률 순위</div>
+        ${sorted.map((p,i)=>{
+          const evalKrw = p.type==='us' ? p.qty*p.currentPrice*usdKrw : p.qty*p.currentPrice;
+          const cost = p.qty*p.avgBuy;
+          const gain = evalKrw-cost;
+          const gainPct = cost ? (gain/cost*100).toFixed(2) : 0;
+          const medals = ['🥇','🥈','🥉'];
+          return `<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--g1)">
+            <div style="font-size:20px;width:28px;text-align:center">${medals[i]||`${i+1}`}</div>
+            <div style="width:34px;height:34px;border-radius:10px;background:${p.color};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;flex-shrink:0">${p.name[0]}</div>
+            <div style="flex:1"><div style="font-size:13px;font-weight:600">${p.name}</div><div style="font-size:11px;color:var(--g4)">${p.ticker}</div></div>
+            <div style="text-align:right">
+              <div style="font-size:14px;font-weight:700;color:${gainPct>=0?'#ef4444':'#1d4ed8'}">${gainPct>=0?'+':''}${gainPct}%</div>
+              <div style="font-size:11px;color:var(--g4)">${gain>=0?'+':''}₩${Math.round(gain).toLocaleString()}</div>
+            </div>
+          </div>`;
+        }).join('')}
+        ${!sorted.length?'<div style="text-align:center;padding:32px;color:var(--g4)">시세 데이터가 없어요<br>새로고침 후 다시 확인해보세요</div>':''}
+      </div>`;
+  }
+
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
 }
 // ────────────────────────────────────────────────
 // 전체 새로고침
