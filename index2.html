@@ -752,8 +752,10 @@ async function yahooFetchVerified(symbol, ticker){
     if(!r.ok) return null;
     const d = await r.json();
     if(d.error || !d.price || d.price <= 0) return null;
-    // 응답의 symbol이 요청한 ticker를 포함하는지 검증
+    // 검증 1: symbol이 ticker로 시작해야 함
     if(d.symbol && !d.symbol.startsWith(ticker)) return null;
+    // 검증 2: name이 비어있으면 엉뚱한 종목 (예: 196170.KS → name:"")
+    if(!d.name || d.name.trim() === '') return null;
     return d.price;
   }catch{ return null; }
 }
