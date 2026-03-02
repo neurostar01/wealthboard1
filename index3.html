@@ -511,20 +511,13 @@ tr.drag-over{border-top:2px solid var(--b5)}
 
       <!-- 주목 패널 -->
       <div id="panel-spotlight" style="display:none">
-        <div style="padding:14px 24px 0;display:flex;align-items:center;justify-content:space-between">
-          <div style="font-size:12px;color:var(--g4)">52주 최고가 대비 <strong style="color:var(--g8)">-15% ~ -25%</strong> 구간 종목 (매수 관심 구간)</div>
+        <div style="padding:14px 24px 8px;display:flex;align-items:center;justify-content:space-between">
+          <div style="font-size:12px;color:var(--g4)">📌 보유·관심·주요 종목 중 <strong style="color:var(--g8)">5년 ATH 대비 -15% ~ -25%</strong> 구간 종목</div>
           <button onclick="fetchSpotlight()" style="background:var(--b0);color:var(--b6);border:none;padding:5px 12px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">🔄 새로고침</button>
         </div>
-        <table class="portfolio-table">
-          <thead>
-            <tr>
-              <th>종목</th><th>유형</th><th>현재가</th><th>52주 최고가</th><th>최고가 대비</th><th>상태</th>
-            </tr>
-          </thead>
-          <tbody id="spotlight-body">
-            <tr><td colspan="6" style="text-align:center;color:var(--g4);padding:32px">🔄 주목 탭 클릭 시 자동 분석됩니다</td></tr>
-          </tbody>
-        </table>
+        <div id="spotlight-body">
+          <div style="text-align:center;color:var(--g4);padding:32px;font-size:13px">🔄 주목 탭 클릭 시 자동 분석됩니다</div>
+        </div>
       </div>
     </div>
 
