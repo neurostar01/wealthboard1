@@ -282,29 +282,23 @@ tr.drag-over{border-top:2px solid var(--b5)}
     display:block;
     position:absolute;top:14px;right:12px;
   }
-  /* 평가금액/수익률 나란히 — 크고 진하게 */
-  .portfolio-table td:nth-child(6),
-  .portfolio-table td:nth-child(7){
-    display:inline-block;
-    margin-right:8px;
-    font-size:15px;font-weight:700;color:var(--g8);
-  }
-  /* 현재가/수량/매수가 — 평가금액과 동일하게 */
+  /* 모바일 종목 카드 — 숫자 크기/색 통일 */
+  .portfolio-table td:nth-child(2){ font-size:11px; margin-right:4px; }
   .portfolio-table td:nth-child(3),
   .portfolio-table td:nth-child(4),
-  .portfolio-table td:nth-child(5){
-    font-size:15px;font-weight:600;color:var(--g8);margin-right:10px;
+  .portfolio-table td:nth-child(5),
+  .portfolio-table td:nth-child(6),
+  .portfolio-table td:nth-child(7){
+    display:block;
+    font-size:15px; font-weight:600; color:var(--g8);
+    margin:3px 0;
   }
-  /* 유형 배지만 작게 */
-  .portfolio-table td:nth-child(2){
-    font-size:11px;margin-right:6px;
-  }
-  /* 현재가/수량/매수가에 레이블 표시 */
-  .portfolio-table td:nth-child(3)::before{ content:'현재가 '; font-size:11px;font-weight:400;color:var(--g4); }
-  .portfolio-table td:nth-child(4)::before{ content:'수량 ';   font-size:11px;font-weight:400;color:var(--g4); }
-  .portfolio-table td:nth-child(5)::before{ content:'매수가 '; font-size:11px;font-weight:400;color:var(--g4); }
-  .portfolio-table td:nth-child(6)::before{ content:'평가금액 '; font-size:11px;font-weight:400;color:var(--g4); }
-  .portfolio-table td:nth-child(7)::before{ content:'수익률 '; font-size:11px;font-weight:400;color:var(--g4); }
+  /* 레이블을 ::before로 앞에 작게 표시 */
+  .portfolio-table td:nth-child(3)::before{ content:'현재가  '; font-size:11px; font-weight:400; color:var(--g4); }
+  .portfolio-table td:nth-child(4)::before{ content:'보유수량 '; font-size:11px; font-weight:400; color:var(--g4); }
+  .portfolio-table td:nth-child(5)::before{ content:'매수가  '; font-size:11px; font-weight:400; color:var(--g4); }
+  .portfolio-table td:nth-child(6)::before{ content:'평가금액 '; font-size:11px; font-weight:400; color:var(--g4); }
+  .portfolio-table td:nth-child(7)::before{ content:'수익률  '; font-size:11px; font-weight:400; color:var(--g4); }
   .row-actions{opacity:1;gap:4px}
   .btn-row{padding:5px 10px;font-size:11px}
 
