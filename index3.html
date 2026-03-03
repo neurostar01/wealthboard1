@@ -653,6 +653,7 @@ tr.drag-over{border-top:2px solid var(--b5)}
       </div>
     </div>
     <div class="modal-footer">
+      <button class="btn-danger" id="tf-btn-delete" style="display:none;margin-right:auto" onclick="deleteTxFromModal()">🗑 삭제</button>
       <button class="btn-secondary" onclick="closeTxModal()">취소</button>
       <button class="btn-primary" onclick="saveTxItem()">💾 저장</button>
     </div>
@@ -1638,35 +1639,72 @@ function renderWatchlist(){
 // 거래 내역
 // ────────────────────────────────────────────────
 let txList = JSON.parse(localStorage.getItem('wb_txlist') || '[]');
+let txEditId = null;
 function saveTxList(){ localStorage.setItem('wb_txlist', JSON.stringify(txList)); }
 
-function openTxModal(){
-  document.getElementById('tf-date').value = new Date().toISOString().split('T')[0];
-  ['tf-name','tf-ticker','tf-qty','tf-price','tf-memo'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('tf-type').value='buy';
+function openTxModal(id=null){
+  txEditId = id;
+  const item = id ? txList.find(t=>t.id===id) : null;
+  document.getElementById('tx-modal-title').textContent = id ? '거래 수정' : '거래 추가';
+  document.getElementById('tf-btn-delete').style.display = id ? 'block' : 'none';
+  if(item){
+    document.getElementById('tf-type').value  = item.type;
+    document.getElementById('tf-date').value  = item.date;
+    document.getElementById('tf-name').value  = item.name||'';
+    document.getElementById('tf-ticker').value= item.ticker||'';
+    document.getElementById('tf-qty').value   = item.qty||'';
+    document.getElementById('tf-price').value = item.price||'';
+    document.getElementById('tf-memo').value  = item.memo||'';
+  } else {
+    document.getElementById('tf-date').value = new Date().toISOString().split('T')[0];
+    ['tf-name','tf-ticker','tf-qty','tf-price','tf-memo'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('tf-type').value='buy';
+  }
   document.getElementById('tx-modal-overlay').classList.add('open');
 }
-function closeTxModal(){ document.getElementById('tx-modal-overlay').classList.remove('open'); }
+function closeTxModal(){
+  document.getElementById('tx-modal-overlay').classList.remove('open');
+  txEditId = null;
+}
 document.getElementById('tx-modal-overlay').addEventListener('click', e=>{
   if(e.target===document.getElementById('tx-modal-overlay')) closeTxModal();
 });
 
 function saveTxItem(){
-  const type = document.getElementById('tf-type').value;
-  const date = document.getElementById('tf-date').value;
-  const name = document.getElementById('tf-name').value.trim();
+  const type   = document.getElementById('tf-type').value;
+  const date   = document.getElementById('tf-date').value;
+  const name   = document.getElementById('tf-name').value.trim();
   const ticker = document.getElementById('tf-ticker').value.trim().toUpperCase();
-  const qty = parseFloat(document.getElementById('tf-qty').value)||0;
-  const price = parseFloat(document.getElementById('tf-price').value)||0;
-  const memo = document.getElementById('tf-memo').value.trim();
+  const qty    = parseFloat(document.getElementById('tf-qty').value)||0;
+  const price  = parseFloat(document.getElementById('tf-price').value)||0;
+  const memo   = document.getElementById('tf-memo').value.trim();
   if(!date||!price){ showToast('⚠️','날짜와 금액을 입력해주세요'); return; }
   const total = (type==='deposit'||type==='withdraw') ? price : qty*price;
-  const item = { id:String(Date.now()), type, date, name, ticker, qty, price, total, memo };
-  txList.unshift(item);
+  const item = { id: txEditId||String(Date.now()), type, date, name, ticker, qty, price, total, memo };
+  if(txEditId){
+    const i = txList.findIndex(t=>t.id===txEditId);
+    if(i!==-1) txList[i] = item;
+    showToast('✅','거래 내역 수정됨');
+  } else {
+    txList.unshift(item);
+    showToast('✅','거래 내역 추가됨');
+  }
+  // 날짜순 정렬
+  txList.sort((a,b)=>b.date.localeCompare(a.date));
   saveTxList();
   closeTxModal();
   renderTxList();
-  showToast('✅','거래 내역 추가됨');
+}
+
+function deleteTxFromModal(){
+  if(!txEditId) return;
+  showConfirm('이 거래 내역을 삭제할까요?', ()=>{
+    txList = txList.filter(t=>t.id!==txEditId);
+    saveTxList();
+    closeTxModal();
+    renderTxList();
+    showToast('🗑️','삭제됨');
+  });
 }
 
 function deleteTx(id){
@@ -1684,27 +1722,24 @@ function renderTxList(){
     el.innerHTML='<div style="text-align:center;color:var(--g4);padding:24px;font-size:13px">거래 내역이 없어요<br><span style="font-size:11px">＋ 거래 추가 버튼으로 등록하세요</span></div>';
     return;
   }
-  const icons = {buy:'📥',sell:'📤',deposit:'💵',withdraw:'💸'};
+  const icons  = {buy:'📥',sell:'📤',deposit:'💵',withdraw:'💸'};
   const labels = {buy:'매수',sell:'매도',deposit:'입금',withdraw:'출금'};
   el.innerHTML = txList.slice(0,20).map(t=>{
     const isBuy = t.type==='buy'||t.type==='deposit';
     const sign = isBuy?'-':'+';
-    const cls = isBuy?'text-down':'text-up';
+    const cls  = isBuy?'text-down':'text-up';
     const dateStr = t.date.replace(/-/g,'.');
     const nameStr = t.name ? `${t.name} ${labels[t.type]}` : labels[t.type];
-    const subStr = t.ticker ? `${dateStr} · ${t.ticker}` : dateStr;
-    const qtyStr = t.qty>0 ? `${t.qty}주 × ₩${Math.round(t.price).toLocaleString()}` : `₩${Math.round(t.price).toLocaleString()}`;
-    return `<div class="tx-item">
+    const subStr  = t.ticker ? `${dateStr} · ${t.ticker}` : dateStr;
+    const qtyStr  = t.qty>0 ? `${t.qty}주 × ₩${Math.round(t.price).toLocaleString()}` : `₩${Math.round(t.price).toLocaleString()}`;
+    return `<div class="tx-item" style="cursor:pointer" onclick="openTxModal('${t.id}')">
       <div class="tx-left">
         <div class="tx-icon ${t.type==='buy'?'buy':t.type==='sell'?'sell':'deposit'}">${icons[t.type]}</div>
         <div><div class="tx-name">${nameStr}</div><div class="tx-date">${subStr}</div></div>
       </div>
       <div style="text-align:right">
         <div class="tx-price ${cls}">${sign}₩${Math.round(t.total).toLocaleString()}</div>
-        <div class="tx-qty" style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
-          ${qtyStr}
-          <button onclick="deleteTx('${t.id}')" style="background:none;border:none;cursor:pointer;color:var(--g4);font-size:12px;padding:0" title="삭제">✕</button>
-        </div>
+        <div class="tx-qty">${qtyStr}</div>
       </div>
     </div>`;
   }).join('');
