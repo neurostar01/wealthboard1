@@ -954,14 +954,17 @@ async function loadFromGist(){
 // ── Gist 저장 ──
 // 디바운스: 500ms 내 중복 저장 요청 묶기
 let _saveTimer = null;
+let _savePending = false;
 function saveToGist(){
   if(!IS_ADMIN) return;
+  // 저장 중이면 끝나는 즉시 다시 저장하도록 표시만
+  if(isSaving){ _savePending = true; return; }
   clearTimeout(_saveTimer);
   _saveTimer = setTimeout(()=> _saveToGistNow(), 800);
 }
 async function _saveToGistNow(){
   if(!IS_ADMIN) return;
-  if(isSaving) return;
+  if(isSaving){ _savePending = true; return; }
   isSaving = true;
   setStatus('gist','loading','저장 중...');
   try{
@@ -984,6 +987,11 @@ async function _saveToGistNow(){
     showToast('⚠️','저장 실패 — 네트워크를 확인해주세요');
   } finally {
     isSaving = false;
+    // 저장 중에 새 요청이 들어왔다면 한 번 더 실행
+    if(_savePending){
+      _savePending = false;
+      setTimeout(()=> _saveToGistNow(), 100);
+    }
   }
 }
 
@@ -1274,9 +1282,9 @@ function render(){
   const kr = portfolio.filter(p=>p.type==='kr');
   const us = portfolio.filter(p=>p.type==='us');
   const cr = portfolio.filter(p=>p.type==='crypto');
-  const krT = kr.reduce((s,p)=>s+p.qty*p.currentPrice,0);
-  const usT = us.reduce((s,p)=>s+p.qty*p.currentPrice*usdKrw,0);
-  const crT = cr.reduce((s,p)=>s+p.qty*p.currentPrice,0);
+  const krT = kr.reduce((s,p)=>s+p.qty*(p.currentPrice||p.avgBuy||0),0);
+  const usT = us.reduce((s,p)=>s+p.qty*(p.currentPrice||p.avgBuy||0)*usdKrw,0);
+  const crT = cr.reduce((s,p)=>s+p.qty*(p.currentPrice||p.avgBuy||0),0);
   const tot = krT+usT+crT;
 
   setTxt('s-total',`₩${Math.round(tot).toLocaleString()}`);
@@ -2547,10 +2555,20 @@ function saveSnapshot() {
   }, 0);
   if (evalTotal <= 0) return; // 시세 로드 전엔 저장 안 함
 
-  // 오늘 날짜 upsert
+  // 오늘 날짜 upsert (값 변화 체크)
   const idx = snapshots.findIndex(s => s.date === today);
-  if (idx > -1) snapshots[idx].eval = Math.round(evalTotal);
-  else snapshots.push({ date: today, eval: Math.round(evalTotal) });
+  const newEval = Math.round(evalTotal);
+  let changed = false;
+  if (idx > -1) {
+    // 1% 이상 변화 시에만 업데이트 (불필요한 Gist 저장 방지)
+    const diff = Math.abs(snapshots[idx].eval - newEval) / snapshots[idx].eval;
+    if (diff > 0.01) { snapshots[idx].eval = newEval; changed = true; }
+  } else {
+    snapshots.push({ date: today, eval: newEval });
+    changed = true;
+  }
+
+  if (!changed) return;
 
   // 날짜순 정렬 후 오래된 것부터 잘라냄
   snapshots.sort((a, b) => a.date.localeCompare(b.date));
@@ -2577,9 +2595,12 @@ async function fetchLive(){
 // 초기 로드 — Gist에서 데이터 먼저 불러온 후 시세 업데이트
 (async ()=>{
   await loadFromGist();
-  await fetchLive();
+  // Gist 로드 직후 즉시 화면 렌더링 (시세는 아직 없지만 데이터는 보이게)
+  render();
   renderTxList();
   renderWatchlist();
+  // 시세 업데이트는 그 다음
+  await fetchLive();
   fetchWatchlistPrices();
   setInterval(fetchLive, 60000);
   setInterval(fetchWatchlistPrices, 60000);
