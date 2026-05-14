@@ -1627,6 +1627,57 @@ function buildReturnChartData(period) {
   return { labels, data };
 }
 
+// 차트 인스턴스 생성
+let rChart = new Chart(rCtx, {
+  type: 'line',
+  data: { labels: [], datasets: [{
+    data: [],
+    borderColor: '#3b82f6',
+    backgroundColor: grad,
+    borderWidth: 2.5,
+    pointRadius: 0,
+    pointHoverRadius: 5,
+    fill: true,
+    tension: 0.4
+  }]},
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: { label: ctx => `₩${ctx.raw.toLocaleString()}` },
+        backgroundColor: '#1e293b',
+        titleColor: '#94a3b8',
+        bodyColor: '#fff',
+        padding: 10,
+        borderRadius: 8
+      }
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { color: '#94a3b8', font: { size: 11 } },
+        border: { display: false }
+      },
+      y: {
+        grid: { color: '#f1f5f9' },
+        ticks: {
+          color: '#94a3b8',
+          font: { size: 11 },
+          callback: v => {
+            if (v >= 100000000) return `₩${(v/100000000).toFixed(1)}억`;
+            if (v >= 10000000)  return `₩${(v/10000000).toFixed(1)}천만`;
+            if (v >= 1000000)   return `₩${(v/1000000).toFixed(0)}백만`;
+            return `₩${v.toLocaleString()}`;
+          }
+        },
+        border: { display: false }
+      }
+    }
+  }
+});
+
 function updateReturnChart(period) {
   const { labels, data } = buildReturnChartData(period);
   rChart.data.labels = labels;
@@ -2661,6 +2712,7 @@ async function fetchLive(){
   render();
   renderTxList();
   renderWatchlist();
+  updateReturnChart('1M'); // 차트 초기 그리기
   // 시세 업데이트는 그 다음
   await fetchLive();
   fetchWatchlistPrices();
