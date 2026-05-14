@@ -387,6 +387,26 @@ tr.drag-over{border-top:2px solid var(--b5)}
     background:var(--accent, #3b82f6); color:#fff; border-color:var(--accent, #3b82f6);
     font-weight:600;
   }
+
+  /* 수익률 추이 비교 카드 */
+  .return-compare{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
+    margin-bottom:14px; padding:0 2px;
+  }
+  .rc-cell{
+    background:var(--g1); border-radius:8px; padding:8px 6px;
+    text-align:center; display:flex; flex-direction:column; gap:2px;
+  }
+  .rc-label{ font-size:10px; color:var(--g4); font-weight:500; }
+  .rc-value{ font-size:13px; font-weight:700; font-family:'DM Mono',monospace; }
+  .rc-amount{ font-size:10px; color:var(--g5); font-family:'DM Mono',monospace; }
+  @media(max-width:480px){
+    .return-compare{ gap:6px; }
+    .rc-cell{ padding:6px 4px; }
+    .rc-label{ font-size:9px; }
+    .rc-value{ font-size:12px; }
+    .rc-amount{ font-size:9px; }
+  }
 </style>
 </head>
 <body>
@@ -506,7 +526,10 @@ tr.drag-over{border-top:2px solid var(--b5)}
             <button class="chart-tab" onclick="switchTab(this,'1Y')">1년</button>
           </div>
         </div>
-        <div class="card-body"><div class="chart-wrap"><canvas id="returnChart"></canvas></div></div>
+        <div class="card-body">
+          <div id="return-compare" class="return-compare"></div>
+          <div class="chart-wrap"><canvas id="returnChart"></canvas></div>
+        </div>
       </div>
       <div class="card">
         <div class="card-header"><div class="card-title">🥧 자산 비중</div></div>
@@ -1113,7 +1136,8 @@ async function yahooFetch(symbol){
     if(!r.ok) return null;
     const d = await r.json();
     if(d.error) return null;
-    return d.price ?? null;
+    if(d.price == null) return null;
+    return { price: d.price, prevClose: d.prevClose ?? d.price };
   }catch{ return null; }
 }
 
@@ -1156,7 +1180,7 @@ async function yahooFetchVerified(symbol, ticker){
     if(!d.name || d.name.trim() === '') return null;
     // 검증 3: 통화가 KRW인지 확인 (USD 등이면 엉뚱한 종목)
     if(d.currency && d.currency !== 'KRW') return null;
-    return d.price;
+    return { price: d.price, prevClose: d.prevClose ?? d.price };
   }catch{ return null; }
 }
 
@@ -1223,8 +1247,8 @@ async function fetchAllStockPrices(){
   setDot('dot-us','loading');
   let usOk=0;
   await Promise.all(usStocks.map(async p=>{
-    const price = await fetchUSPrice(p.ticker);
-    if(price!==null){ p.currentPrice=price; usOk++; }
+    const result = await fetchUSPrice(p.ticker);
+    if(result){ p.currentPrice=result.price; p.prevClose=result.prevClose; usOk++; }
   }));
   setDot('dot-us', usOk>0||usStocks.length===0 ? 'ok' : 'error');
 
@@ -1232,8 +1256,8 @@ async function fetchAllStockPrices(){
   setDot('dot-kr','loading');
   let krOk=0;
   await Promise.all(krStocks.map(async p=>{
-    const price = await fetchKRPrice(p.ticker, p.exchange || 'auto');
-    if(price!==null){ p.currentPrice=price; krOk++; }
+    const result = await fetchKRPrice(p.ticker, p.exchange || 'auto');
+    if(result){ p.currentPrice=result.price; p.prevClose=result.prevClose; krOk++; }
   }));
   setDot('dot-kr', krOk>0||krStocks.length===0 ? 'ok' : 'error');
 }
@@ -1254,10 +1278,12 @@ async function fetchPriceForModal(){
   try{
     let price = null;
     if(type==='us'){
-      price = await fetchUSPrice(ticker);
+      const r = await fetchUSPrice(ticker);
+      price = r ? r.price : null;
     } else if(type==='kr'){
       const exch = document.getElementById('f-exchange').value;
-      price = await fetchKRPrice(ticker, exch);
+      const r = await fetchKRPrice(ticker, exch);
+      price = r ? r.price : null;
       if(price===null){
         // 모든 프록시 실패 시 네이버 금융 링크 안내
         setFetchStatus('err',`⚠️ 자동 조회 실패 — <a href="https://finance.naver.com/item/main.naver?code=${ticker}" target="_blank" style="color:var(--b5)">네이버 금융에서 확인 →</a>`);
@@ -1346,6 +1372,8 @@ function render(){
     const evalKrw = p.type==='us' ? p.qty*p.currentPrice*usdKrw : p.qty*p.currentPrice;
     const costKrw = p.qty * p.avgBuy;  // avgBuy 항상 원화
     const pct = costKrw ? (evalKrw-costKrw)/costKrw*100 : 0;
+    // 전일대비: prevClose 기준
+    const dayChg = (p.prevClose && p.currentPrice) ? ((p.currentPrice - p.prevClose) / p.prevClose) * 100 : null;
     const prStr = p.type==='us' && p.currentPrice>0
       ? `<span title="$${p.currentPrice.toLocaleString()}">₩${Math.round(p.currentPrice*usdKrw).toLocaleString()}</span>`
       : `₩${Math.round(p.currentPrice).toLocaleString()}`;
@@ -1370,13 +1398,14 @@ function render(){
       <td class="text-mono">${qStr}</td>
       <td class="text-mono">${avStr}</td>
       <td class="text-mono">₩${Math.round(evalKrw).toLocaleString()}</td>
-      <td class="${pct>=0?'text-up':'text-down'}">${pct>=0?'▲':'▼'} ${Math.abs(pct).toFixed(2)}%</td>
+      <td class="${pct>=0?'text-up':'text-down'}">${pct>=0?'▲':'▼'} ${Math.abs(pct).toFixed(2)}%<div class="day-chg" style="font-size:11px;font-weight:500;margin-top:2px;${dayChg===null?'color:var(--g4)':(dayChg>=0?'color:var(--gn)':'color:var(--rd)')}">${dayChg===null?'전일 -':`전일 ${dayChg>=0?'+':'-'}${Math.abs(dayChg).toFixed(2)}%`}</div></td>
       <td class="mob-card" style="display:none">
         <div class="mob-row"><span class="mob-label">현재가</span><span class="mob-val">${prStr}</span></div>
         <div class="mob-row"><span class="mob-label">보유수량</span><span class="mob-val">${qStr}</span></div>
         <div class="mob-row"><span class="mob-label">매수가</span><span class="mob-val">${avStr}</span></div>
         <div class="mob-row"><span class="mob-label">평가금액</span><span class="mob-val">₩${Math.round(evalKrw).toLocaleString()}</span></div>
         <div class="mob-row"><span class="mob-label">수익률</span><span class="${pct>=0?'text-up':'text-down'}" style="font-size:15px;font-weight:700">${pct>=0?'▲':'▼'} ${Math.abs(pct).toFixed(2)}%</span></div>
+        <div class="mob-row"><span class="mob-label">전일대비</span><span style="font-size:13px;font-weight:600;color:${dayChg===null?'var(--g4)':(dayChg>=0?'var(--gn)':'var(--rd)')}">${dayChg===null?'-':`${dayChg>=0?'▲':'▼'} ${Math.abs(dayChg).toFixed(2)}%`}</span></div>
       </td>
       <td style="text-align:right"><div class="row-actions">
         <button class="btn-row btn-edit" data-action="edit" data-id="${p.id}">수정</button>
@@ -1597,6 +1626,71 @@ const grad = rCtx.createLinearGradient(0,0,0,220);
 grad.addColorStop(0,'rgba(59,130,246,.18)'); grad.addColorStop(1,'rgba(59,130,246,0)');
 
 
+// ── 비교 수치 계산: 전일/전주/전월/전년 대비 ──
+function updateReturnCompare() {
+  const el = document.getElementById('return-compare');
+  if (!el) return;
+
+  // 현재 평가금액
+  const currentEval = portfolio.reduce((sum, p) => {
+    return sum + (p.type === 'us'
+      ? p.qty * (p.currentPrice || p.avgBuy || 0) * usdKrw
+      : p.qty * (p.currentPrice || p.avgBuy || 0));
+  }, 0);
+
+  if (currentEval <= 0) {
+    el.innerHTML = '';
+    return;
+  }
+
+  // 기준 날짜
+  const now = new Date();
+  const daysAgo = (n) => {
+    const d = new Date(now); d.setDate(now.getDate() - n);
+    return d.toISOString().split('T')[0];
+  };
+  const monthsAgo = (n) => {
+    const d = new Date(now); d.setMonth(now.getMonth() - n);
+    return d.toISOString().split('T')[0];
+  };
+  const yearsAgo = (n) => {
+    const d = new Date(now); d.setFullYear(now.getFullYear() - n);
+    return d.toISOString().split('T')[0];
+  };
+
+  // 가장 가까운 과거 스냅샷 찾기
+  function getNearestSnapshot(targetDate) {
+    // targetDate 이전 중 가장 최신 스냅샷
+    const past = snapshots.filter(s => s.date <= targetDate);
+    if (past.length === 0) return null;
+    return past[past.length - 1]; // 정렬된 상태라 가정
+  }
+
+  const periods = [
+    { label: '전일', target: daysAgo(1) },
+    { label: '전주', target: daysAgo(7) },
+    { label: '전월', target: monthsAgo(1) },
+    { label: '전년', target: yearsAgo(1) }
+  ];
+
+  el.innerHTML = periods.map(p => {
+    const snap = getNearestSnapshot(p.target);
+    if (!snap) {
+      return `<div class="rc-cell"><div class="rc-label">${p.label}</div><div class="rc-value" style="color:var(--g4)">-</div><div class="rc-amount">데이터 없음</div></div>`;
+    }
+    const diff = currentEval - snap.eval;
+    const pct = (diff / snap.eval) * 100;
+    const cls = diff >= 0 ? 'text-up' : 'text-down';
+    const sign = diff >= 0 ? '▲' : '▼';
+    const diffStr = (diff >= 0 ? '+' : '-') + '₩' + Math.abs(Math.round(diff)).toLocaleString();
+    return `<div class="rc-cell">
+      <div class="rc-label">${p.label}</div>
+      <div class="rc-value ${cls}">${sign} ${Math.abs(pct).toFixed(2)}%</div>
+      <div class="rc-amount ${cls}">${diffStr}</div>
+    </div>`;
+  }).join('');
+}
+
 // ── 수익률 추이: 스냅샷 기반 실제 데이터 ──
 function buildReturnChartData(period) {
   const now = new Date();
@@ -1683,6 +1777,7 @@ function updateReturnChart(period) {
   rChart.data.labels = labels;
   rChart.data.datasets[0].data = data;
   rChart.update();
+  updateReturnCompare();
 }
 
 function switchTab(el, p) {
@@ -1781,8 +1876,8 @@ function deleteWatchItem(){
 
 async function fetchWatchlistPrices(){
   await Promise.all(watchlist.map(async w=>{
-    if(w.type==='kr') w.currentPrice = await fetchKRPrice(w.ticker, w.exchange||'auto') || w.currentPrice;
-    else if(w.type==='us') w.currentPrice = await fetchUSPrice(w.ticker) || w.currentPrice;
+    if(w.type==='kr') { const r = await fetchKRPrice(w.ticker, w.exchange||'auto'); if(r){ w.currentPrice=r.price; w.prevClose=r.prevClose; } }
+    else if(w.type==='us'){ const r = await fetchUSPrice(w.ticker); if(r){ w.currentPrice=r.price; w.prevClose=r.prevClose; } }
     else if(w.type==='crypto'){
       const id = w.coinId||COIN_MAP[w.ticker]||w.ticker.toLowerCase();
       try{
@@ -2713,6 +2808,7 @@ async function fetchLive(){
   renderTxList();
   renderWatchlist();
   updateReturnChart('1M'); // 차트 초기 그리기
+  updateReturnCompare(); // 비교 수치 초기화
   // 시세 업데이트는 그 다음
   await fetchLive();
   fetchWatchlistPrices();
