@@ -719,7 +719,7 @@ tr.drag-over{border-top:2px solid var(--b5)}
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">거래 유형</label>
-          <select class="form-select" id="tf-type">
+          <select class="form-select" id="tf-type" onchange="toggleAvgBuyField()">
             <option value="buy">📥 매수</option>
             <option value="sell">📤 매도</option>
             <option value="deposit">💵 입금</option>
@@ -750,6 +750,10 @@ tr.drag-over{border-top:2px solid var(--b5)}
           <label class="form-label">단가 또는 금액 (₩)</label>
           <input class="form-input" id="tf-price" type="number" step="any" placeholder="0"/>
         </div>
+      </div>
+      <div class="form-group" id="tf-avgbuy-group" style="display:none">
+        <label class="form-label">평균 매수가 <span style="font-size:11px;color:var(--g4);font-weight:400">(매도 시 실현손익 계산용)</span></label>
+        <input class="form-input" id="tf-avgbuy" type="number" step="any" placeholder="비워두면 자동 계산"/>
       </div>
       <div class="form-group">
         <label class="form-label">메모</label>
@@ -1943,6 +1947,13 @@ let txList = JSON.parse(localStorage.getItem('wb_txlist') || '[]');
 let txEditId = null;
 function saveTxList(){ localStorage.setItem('wb_txlist', JSON.stringify(txList)); saveToGist(); }
 
+
+function toggleAvgBuyField() {
+  const type = document.getElementById('tf-type').value;
+  const group = document.getElementById('tf-avgbuy-group');
+  if (group) group.style.display = (type === 'sell') ? 'block' : 'none';
+}
+
 function openTxModal(id=null){
   txEditId = id;
   const item = id ? txList.find(t=>t.id===id) : null;
@@ -1956,11 +1967,13 @@ function openTxModal(id=null){
     document.getElementById('tf-qty').value   = item.qty||'';
     document.getElementById('tf-price').value = item.price||'';
     document.getElementById('tf-memo').value  = item.memo||'';
+    document.getElementById('tf-avgbuy').value= item.avgBuyAtSale||'';
   } else {
     document.getElementById('tf-date').value = new Date().toISOString().split('T')[0];
-    ['tf-name','tf-ticker','tf-qty','tf-price','tf-memo'].forEach(id=>document.getElementById(id).value='');
+    ['tf-name','tf-ticker','tf-qty','tf-price','tf-memo','tf-avgbuy'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('tf-type').value='buy';
   }
+  toggleAvgBuyField();
   document.getElementById('tx-modal-overlay').classList.add('open');
 }
 function closeTxModal(){
@@ -1981,7 +1994,23 @@ function saveTxItem(){
   const memo   = document.getElementById('tf-memo').value.trim();
   if(!date||!price){ showToast('⚠️','날짜와 금액을 입력해주세요'); return; }
   const total = (type==='deposit'||type==='withdraw') ? price : qty*price;
+  // 매도 시: 평균 매수가 캡처 (수동 입력 > 포트폴리오)
+  let capturedAvgBuy = null;
+  if (type === 'sell') {
+    // 1순위: 사용자가 직접 입력한 값
+    const manualAvg = parseFloat(document.getElementById('tf-avgbuy').value);
+    if (manualAvg > 0) {
+      capturedAvgBuy = manualAvg;
+    } else if (ticker) {
+      // 2순위: 포트폴리오에서 자동 캡처
+      const portfolioItem = portfolio.find(p => p.ticker === ticker);
+      if (portfolioItem && portfolioItem.avgBuy) {
+        capturedAvgBuy = portfolioItem.avgBuy;
+      }
+    }
+  }
   const item = { id: txEditId||String(Date.now()), type, date, name, ticker, qty, price, total, memo };
+  if (capturedAvgBuy !== null) item.avgBuyAtSale = capturedAvgBuy;
   if(txEditId){
     const i = txList.findIndex(t=>t.id===txEditId);
     if(i!==-1) txList[i] = item;
@@ -2027,7 +2056,7 @@ function calcRealizedPnL(targetTx) {
 
   // 같은 종목의 모든 거래를 날짜순 정렬 (오래된 것 먼저)
   const sameStock = txList
-    .filter(t => t.ticker === targetTx.ticker)
+    .filter(t => t.ticker === targetTx.ticker && (t.type === 'buy' || t.type === 'sell'))
     .sort((a, b) => a.date.localeCompare(b.date));
 
   // 이동평균법으로 targetTx 직전까지의 평균 매수가 계산
@@ -2050,9 +2079,23 @@ function calcRealizedPnL(targetTx) {
     }
   }
 
-  if (totalQty <= 0) return null; // 보유 수량 없으면 계산 불가
+  let avgBuyPrice;
+  // 1순위: 매도 시 저장된 평균 매수가 (가장 정확, 영구 보존)
+  if (targetTx.avgBuyAtSale) {
+    avgBuyPrice = targetTx.avgBuyAtSale;
+  } else if (totalQty > 0) {
+    // 2순위: 거래내역에 매수 기록이 충분하면 그걸로 계산
+    avgBuyPrice = totalCost / totalQty;
+  } else {
+    // 3순위: 포트폴리오의 현재 avgBuy 사용 (fallback)
+    const portfolioItem = portfolio.find(p => p.ticker === targetTx.ticker);
+    if (portfolioItem && portfolioItem.avgBuy) {
+      avgBuyPrice = portfolioItem.avgBuy;
+    } else {
+      return null; // 그래도 없으면 계산 불가
+    }
+  }
 
-  const avgBuyPrice = totalCost / totalQty;
   const realizedGain = (targetTx.price - avgBuyPrice) * targetTx.qty;
   const realizedPct = ((targetTx.price - avgBuyPrice) / avgBuyPrice) * 100;
 
