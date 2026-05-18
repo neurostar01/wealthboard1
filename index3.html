@@ -407,6 +407,18 @@ tr.drag-over{border-top:2px solid var(--b5)}
     .rc-value{ font-size:12px; }
     .rc-amount{ font-size:9px; }
   }
+
+  /* 거래내역 실현손익 요약 */
+  .tx-summary{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:10px 14px; margin-bottom:10px;
+    background:linear-gradient(135deg, var(--g1), #fff);
+    border:1px solid var(--g2); border-radius:10px;
+  }
+  .tx-summary-label{ font-size:12px; color:var(--g5); font-weight:500; }
+  .tx-summary-value{ font-size:15px; font-weight:700; font-family:'DM Mono',monospace; }
+  /* 매도 항목 실현손익 작은 배지 */
+  .tx-pnl{ font-family:'DM Mono',monospace; }
 </style>
 </head>
 <body>
@@ -2007,6 +2019,46 @@ function deleteTx(id){
   });
 }
 
+
+// ── 매도 실현손익 계산 ──
+// 매도 시점까지의 평균 매수가(이동평균법) 기준으로 손익 계산
+function calcRealizedPnL(targetTx) {
+  if (targetTx.type !== 'sell' || !targetTx.ticker) return null;
+
+  // 같은 종목의 모든 거래를 날짜순 정렬 (오래된 것 먼저)
+  const sameStock = txList
+    .filter(t => t.ticker === targetTx.ticker)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  // 이동평균법으로 targetTx 직전까지의 평균 매수가 계산
+  let totalQty = 0;
+  let totalCost = 0;
+
+  for (const t of sameStock) {
+    if (t.id === targetTx.id) break; // 대상 거래 도달 시 중단
+
+    if (t.type === 'buy') {
+      totalCost += t.qty * t.price;
+      totalQty += t.qty;
+    } else if (t.type === 'sell') {
+      // 매도 시 평균 매수가는 유지, 수량만 차감
+      if (totalQty > 0) {
+        const avgCost = totalCost / totalQty;
+        totalCost -= avgCost * t.qty;
+        totalQty -= t.qty;
+      }
+    }
+  }
+
+  if (totalQty <= 0) return null; // 보유 수량 없으면 계산 불가
+
+  const avgBuyPrice = totalCost / totalQty;
+  const realizedGain = (targetTx.price - avgBuyPrice) * targetTx.qty;
+  const realizedPct = ((targetTx.price - avgBuyPrice) / avgBuyPrice) * 100;
+
+  return { avgBuyPrice, realizedGain, realizedPct };
+}
+
 let _txSelectedMonth = null; // null = 전체 보기
 
 function renderTxList(){
@@ -2048,9 +2100,32 @@ function renderTxList(){
     return;
   }
 
+  // 해당 기간 실현손익 합계 계산
+  let totalRealizedGain = 0;
+  let sellCount = 0;
+  filtered.forEach(t => {
+    if (t.type === 'sell') {
+      const pnl = calcRealizedPnL(t);
+      if (pnl) { totalRealizedGain += pnl.realizedGain; sellCount++; }
+    }
+  });
+
+  // 요약 박스
+  let summaryHtml = '';
+  if (sellCount > 0) {
+    const cls  = totalRealizedGain >= 0 ? 'text-up' : 'text-down';
+    const sign = totalRealizedGain >= 0 ? '+' : '-';
+    const arrow = totalRealizedGain >= 0 ? '▲' : '▼';
+    const periodLabel = _txSelectedMonth === 'ALL' ? '전체' : (_txSelectedMonth.split('-').map(Number).slice(1)[0] + '월');
+    summaryHtml = `<div class="tx-summary">
+      <div class="tx-summary-label">${periodLabel} 실현손익 (${sellCount}건)</div>
+      <div class="tx-summary-value ${cls}">${arrow} ${sign}₩${Math.abs(Math.round(totalRealizedGain)).toLocaleString()}</div>
+    </div>`;
+  }
+
   const icons  = {buy:'📥',sell:'📤',deposit:'💵',withdraw:'💸'};
   const labels = {buy:'매수',sell:'매도',deposit:'입금',withdraw:'출금'};
-  el.innerHTML = filtered.map(t=>{
+  el.innerHTML = summaryHtml + filtered.map(t=>{
     const isBuy = t.type==='buy'||t.type==='deposit';
     const sign = isBuy?'-':'+';
     const cls  = isBuy?'text-down':'text-up';
@@ -2058,6 +2133,21 @@ function renderTxList(){
     const nameStr = t.name ? `${t.name} ${labels[t.type]}` : labels[t.type];
     const subStr  = t.ticker ? `${dateStr} · ${t.ticker}` : dateStr;
     const qtyStr  = t.qty>0 ? `${t.qty}주 × ₩${Math.round(t.price).toLocaleString()}` : `₩${Math.round(t.price).toLocaleString()}`;
+
+    // 매도 시 실현손익 계산
+    let pnlHtml = '';
+    if (t.type === 'sell') {
+      const pnl = calcRealizedPnL(t);
+      if (pnl) {
+        const gainCls = pnl.realizedGain >= 0 ? 'text-up' : 'text-down';
+        const sign2   = pnl.realizedGain >= 0 ? '+' : '-';
+        const arrow   = pnl.realizedGain >= 0 ? '▲' : '▼';
+        pnlHtml = `<div class="tx-pnl ${gainCls}" style="font-size:11px;font-weight:600;margin-top:2px">
+          ${arrow} ${sign2}₩${Math.abs(Math.round(pnl.realizedGain)).toLocaleString()} (${pnl.realizedPct>=0?'+':''}${pnl.realizedPct.toFixed(2)}%)
+        </div>`;
+      }
+    }
+
     return `<div class="tx-item" style="cursor:pointer" onclick="openTxModal('${t.id}')">
       <div class="tx-left">
         <div class="tx-icon ${t.type==='buy'?'buy':t.type==='sell'?'sell':'deposit'}">${icons[t.type]}</div>
@@ -2066,6 +2156,7 @@ function renderTxList(){
       <div style="text-align:right">
         <div class="tx-price ${cls}">${sign}₩${Math.round(t.total).toLocaleString()}</div>
         <div class="tx-qty">${qtyStr}</div>
+        ${pnlHtml}
       </div>
     </div>`;
   }).join('');
