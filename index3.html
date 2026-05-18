@@ -388,7 +388,7 @@ tr.drag-over{border-top:2px solid var(--b5)}
     font-weight:600;
   }
 
-  /* 수익률 추이 비교 카드 */
+  /* 자산 추이 비교 카드 */
   .return-compare{
     display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
     margin-bottom:14px; padding:0 2px;
@@ -419,6 +419,77 @@ tr.drag-over{border-top:2px solid var(--b5)}
   .tx-summary-value{ font-size:15px; font-weight:700; font-family:'DM Mono',monospace; }
   /* 매도 항목 실현손익 작은 배지 */
   .tx-pnl{ font-family:'DM Mono',monospace; }
+
+  /* 실현손익 요약 카드 (클릭 가능) */
+  .tx-summary-card{
+    margin-bottom:12px; padding:14px 16px;
+    background:linear-gradient(135deg, #eff6ff, #fff);
+    border:1px solid #dbeafe; border-radius:12px;
+    cursor:pointer; transition:all 0.15s;
+  }
+  .tx-summary-card:hover{ background:linear-gradient(135deg, #dbeafe, #fff); transform:translateY(-1px); box-shadow:0 4px 12px rgba(59,130,246,0.08); }
+  .tx-summary-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .tx-summary-title{ font-size:13px; color:var(--g6); font-weight:600; }
+  .tx-summary-arrow{ font-size:11px; color:var(--accent, #3b82f6); font-weight:500; }
+  .tx-summary-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .tx-sg-cell{ padding:8px 0; }
+  .tx-sg-label{ font-size:11px; color:var(--g4); margin-bottom:3px; }
+  .tx-sg-value{ font-size:15px; font-weight:700; font-family:'DM Mono',monospace; color:var(--g8); }
+
+  /* 실현손익 상세 모달 */
+  .rd-top{
+    background:var(--g1); border-radius:10px; padding:14px;
+    margin-bottom:16px;
+  }
+  .rd-top-row{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:6px 0;
+    border-bottom:1px solid rgba(0,0,0,0.04);
+  }
+  .rd-top-row:last-child{ border-bottom:none; }
+  .rd-top-label{ font-size:13px; color:var(--g5); font-weight:500; }
+  .rd-top-value{ font-size:15px; font-weight:700; font-family:'DM Mono',monospace; }
+
+  .rd-divider{
+    font-size:12px; color:var(--g4); font-weight:600;
+    margin:14px 0 10px; padding-bottom:6px;
+    border-bottom:1px solid var(--g2);
+  }
+  .rd-stock{
+    padding:10px 12px; margin-bottom:8px;
+    background:#fff; border:1px solid var(--g2); border-radius:8px;
+  }
+  .rd-stock-head{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:6px;
+  }
+  .rd-stock-name{ font-size:13px; font-weight:600; color:var(--g8); }
+  .rd-stock-gain{ font-size:14px; font-weight:700; font-family:'DM Mono',monospace; }
+  .rd-stock-detail{
+    display:flex; justify-content:space-between;
+    font-size:11px; color:var(--g5); font-family:'DM Mono',monospace;
+  }
+
+  /* 차트 컨트롤 영역 */
+  .chart-controls{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .chart-mode{
+    display:inline-flex; background:var(--g1); border-radius:8px; padding:3px; gap:2px;
+  }
+  .chart-mode-btn{
+    padding:5px 10px; border:none; background:transparent;
+    font-size:11px; font-weight:600; color:var(--g5);
+    border-radius:6px; cursor:pointer; transition:all 0.15s;
+    white-space:nowrap;
+  }
+  .chart-mode-btn:hover{ color:var(--g7); }
+  .chart-mode-btn.active{
+    background:#fff; color:var(--accent, #3b82f6);
+    box-shadow:0 1px 3px rgba(0,0,0,0.08);
+  }
+  @media(max-width:480px){
+    .chart-controls{ width:100%; justify-content:space-between; }
+    .chart-mode-btn{ padding:4px 8px; font-size:10px; }
+  }
 </style>
 </head>
 <body>
@@ -530,12 +601,18 @@ tr.drag-over{border-top:2px solid var(--b5)}
     <div class="main-grid">
       <div class="card">
         <div class="card-header">
-          <div class="card-title">📈 수익률 추이</div>
-          <div class="chart-tabs">
-            <button class="chart-tab" onclick="switchTab(this,'1W')">1주</button>
-            <button class="chart-tab active" onclick="switchTab(this,'1M')">1개월</button>
-            <button class="chart-tab" onclick="switchTab(this,'3M')">3개월</button>
-            <button class="chart-tab" onclick="switchTab(this,'1Y')">1년</button>
+          <div class="card-title" id="chart-title">📈 자산 추이</div>
+          <div class="chart-controls">
+            <div class="chart-mode">
+              <button class="chart-mode-btn active" onclick="switchChartMode(this,'amount')">₩ 금액</button>
+              <button class="chart-mode-btn" onclick="switchChartMode(this,'percent')">% 수익률</button>
+            </div>
+            <div class="chart-tabs">
+              <button class="chart-tab" onclick="switchTab(this,'1W')">1주</button>
+              <button class="chart-tab active" onclick="switchTab(this,'1M')">1개월</button>
+              <button class="chart-tab" onclick="switchTab(this,'3M')">3개월</button>
+              <button class="chart-tab" onclick="switchTab(this,'1Y')">1년</button>
+            </div>
           </div>
         </div>
         <div class="card-body">
@@ -653,6 +730,20 @@ tr.drag-over{border-top:2px solid var(--b5)}
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- 실현손익 상세 모달 -->
+<div id="realized-modal-overlay" class="modal-overlay" onclick="if(event.target===this)closeRealizedDetail()">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <div class="modal-title" id="realized-modal-title">실현손익 상세</div>
+      <button class="modal-close" onclick="closeRealizedDetail()">×</button>
+    </div>
+    <div class="modal-body" id="realized-modal-body" style="padding:16px"></div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeRealizedDetail()">닫기</button>
+    </div>
   </div>
 </div>
 
@@ -1707,8 +1798,9 @@ function updateReturnCompare() {
   }).join('');
 }
 
-// ── 수익률 추이: 스냅샷 기반 실제 데이터 ──
-function buildReturnChartData(period) {
+// ── 자산 추이: 스냅샷 기반 실제 데이터 ──
+function buildReturnChartData(period, mode) {
+  mode = mode || (window._chartMode || 'amount');
   const now = new Date();
   let cutoff;
   if      (period === '1W') { cutoff = new Date(now); cutoff.setDate(now.getDate() - 7); }
@@ -1719,13 +1811,16 @@ function buildReturnChartData(period) {
   const cutoffStr = cutoff.toISOString().split('T')[0];
   const filtered  = snapshots.filter(s => s.date >= cutoffStr);
 
-  // 스냅샷이 없으면 현재 평가금액 1포인트만
+  // 스냅샷이 없으면 현재 1포인트만
   if (!filtered.length) {
     const evalNow = portfolio.reduce((sum, p) => {
       return sum + (p.type === 'us'
         ? p.qty * (p.currentPrice || p.avgBuy) * usdKrw
         : p.qty * (p.currentPrice || p.avgBuy));
     }, 0);
+    if (mode === 'percent') {
+      return { labels: ['오늘'], data: [0] };
+    }
     return { labels: ['오늘'], data: [Math.round(evalNow)] };
   }
 
@@ -1733,7 +1828,16 @@ function buildReturnChartData(period) {
     const [,mm,dd] = s.date.split('-');
     return period === '1Y' ? `${+mm}월` : `${+mm}/${+dd}`;
   });
-  const data = filtered.map(s => s.eval);
+
+  let data;
+  if (mode === 'percent') {
+    // 수익률(%) — 기간 시작점 대비 변화율
+    const base = filtered[0].eval;
+    data = filtered.map(s => +((s.eval - base) / base * 100).toFixed(2));
+  } else {
+    // 금액(₩)
+    data = filtered.map(s => s.eval);
+  }
   return { labels, data };
 }
 
@@ -1789,11 +1893,50 @@ let rChart = new Chart(rCtx, {
 });
 
 function updateReturnChart(period) {
-  const { labels, data } = buildReturnChartData(period);
+  const mode = window._chartMode || 'amount';
+  const { labels, data } = buildReturnChartData(period, mode);
   rChart.data.labels = labels;
   rChart.data.datasets[0].data = data;
+
+  // Y축/툴팁 포맷을 모드에 따라 변경
+  if (mode === 'percent') {
+    rChart.options.scales.y.ticks.callback = v => (v>=0?'+':'') + v.toFixed(1) + '%';
+    rChart.options.plugins.tooltip.callbacks.label = ctx => (ctx.raw>=0?'+':'') + ctx.raw.toFixed(2) + '%';
+    // 양음 컬러 (수익은 빨강, 손실은 파랑 - 한국식)
+    const isPositive = data[data.length-1] >= 0;
+    rChart.data.datasets[0].borderColor = isPositive ? '#ef4444' : '#3b82f6';
+  } else {
+    rChart.options.scales.y.ticks.callback = v => {
+      if (v >= 100000000) return `₩${(v/100000000).toFixed(1)}억`;
+      if (v >= 10000000)  return `₩${(v/10000000).toFixed(1)}천만`;
+      if (v >= 1000000)   return `₩${(v/1000000).toFixed(0)}백만`;
+      return `₩${v.toLocaleString()}`;
+    };
+    rChart.options.plugins.tooltip.callbacks.label = ctx => `₩${ctx.raw.toLocaleString()}`;
+    rChart.data.datasets[0].borderColor = '#3b82f6';
+  }
+
   rChart.update();
   updateReturnCompare();
+}
+
+// 차트 모드 전환 (금액 / 수익률)
+function switchChartMode(el, mode) {
+  document.querySelectorAll('.chart-mode-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  window._chartMode = mode;
+
+  // 카드 제목도 변경
+  const titleEl = document.getElementById('chart-title');
+  if (titleEl) titleEl.textContent = mode === 'percent' ? '📊 수익률 추이' : '📈 자산 추이';
+
+  // 현재 활성 기간 탭으로 다시 그리기
+  const activeTab = document.querySelector('.chart-tab.active');
+  const period = activeTab ?
+    (activeTab.textContent === '1주' ? '1W' :
+     activeTab.textContent === '3개월' ? '3M' :
+     activeTab.textContent === '1년' ? '1Y' : '1M') : '1M';
+  updateReturnChart(period);
 }
 
 function switchTab(el, p) {
@@ -2102,6 +2245,89 @@ function calcRealizedPnL(targetTx) {
   return { avgBuyPrice, realizedGain, realizedPct };
 }
 
+
+// ── 실현손익 상세 모달 ──
+function openRealizedDetail() {
+  const periodLabel = _txSelectedMonth === 'ALL' ? '전체 기간' : (_txSelectedMonth + ' (' + (+_txSelectedMonth.split('-')[1]) + '월)');
+  document.getElementById('realized-modal-title').textContent = periodLabel + ' 실현손익 상세';
+
+  // 해당 기간 매도 거래 추출
+  const sells = (_txSelectedMonth === 'ALL'
+    ? txList
+    : txList.filter(t => t.date.slice(0,7) === _txSelectedMonth)
+  ).filter(t => t.type === 'sell');
+
+  if (sells.length === 0) {
+    document.getElementById('realized-modal-body').innerHTML = '<div style="text-align:center;color:var(--g4);padding:24px">매도 거래가 없어요</div>';
+  } else {
+    // 종목별 그룹화
+    const byStock = {};
+    let totalSell = 0, totalGain = 0, totalCount = 0;
+    sells.forEach(t => {
+      const key = t.ticker || t.name;
+      const pnl = calcRealizedPnL(t);
+      if (!byStock[key]) byStock[key] = { name: t.name, ticker: t.ticker, count: 0, sellAmt: 0, gain: 0, avgBuy: 0, sellQty: 0 };
+      byStock[key].count++;
+      byStock[key].sellAmt += t.total;
+      byStock[key].sellQty += t.qty;
+      if (pnl) {
+        byStock[key].gain += pnl.realizedGain;
+        byStock[key].avgBuy = pnl.avgBuyPrice; // 마지막 값으로 갱신
+      }
+      totalSell += t.total;
+      if (pnl) totalGain += pnl.realizedGain;
+      totalCount++;
+    });
+
+    const stockList = Object.values(byStock).map(s => {
+      const pct = s.avgBuy ? ((s.sellAmt/s.sellQty - s.avgBuy) / s.avgBuy * 100) : 0;
+      const cls = s.gain >= 0 ? 'text-up' : 'text-down';
+      const arrow = s.gain >= 0 ? '▲' : '▼';
+      const sign = s.gain >= 0 ? '+' : '-';
+      return `<div class="rd-stock">
+        <div class="rd-stock-head">
+          <span class="rd-stock-name">${s.name||s.ticker} ${s.count>1?'<span style="font-size:11px;color:var(--g4)">×'+s.count+'건</span>':''}</span>
+          <span class="rd-stock-gain ${cls}">${arrow} ${sign}₩${Math.abs(Math.round(s.gain)).toLocaleString()}</span>
+        </div>
+        <div class="rd-stock-detail">
+          <span>매도: ${s.sellQty}주 / ₩${Math.round(s.sellAmt).toLocaleString()}</span>
+          <span class="${cls}">${pct>=0?'+':''}${pct.toFixed(2)}%</span>
+        </div>
+      </div>`;
+    }).join('');
+
+    const totalCls = totalGain >= 0 ? 'text-up' : 'text-down';
+    const totalSign = totalGain >= 0 ? '+' : '-';
+    const totalArrow = totalGain >= 0 ? '▲' : '▼';
+    const cashSign = '+';
+
+    document.getElementById('realized-modal-body').innerHTML = `
+      <div class="rd-top">
+        <div class="rd-top-row">
+          <span class="rd-top-label">매도 총액 (현금화)</span>
+          <span class="rd-top-value">₩${Math.round(totalSell).toLocaleString()}</span>
+        </div>
+        <div class="rd-top-row">
+          <span class="rd-top-label">실현 손익</span>
+          <span class="rd-top-value ${totalCls}">${totalArrow} ${totalSign}₩${Math.abs(Math.round(totalGain)).toLocaleString()}</span>
+        </div>
+        <div class="rd-top-row">
+          <span class="rd-top-label">거래 건수</span>
+          <span class="rd-top-value">${totalCount}건</span>
+        </div>
+      </div>
+      <div class="rd-divider">종목별 상세</div>
+      ${stockList}
+    `;
+  }
+
+  document.getElementById('realized-modal-overlay').classList.add('open');
+}
+
+function closeRealizedDetail() {
+  document.getElementById('realized-modal-overlay').classList.remove('open');
+}
+
 let _txSelectedMonth = null; // null = 전체 보기
 
 function renderTxList(){
@@ -2143,26 +2369,46 @@ function renderTxList(){
     return;
   }
 
-  // 해당 기간 실현손익 합계 계산
+  // 해당 기간 매도/매수 합계 + 실현손익 계산
+  let totalSellAmount = 0;
+  let totalBuyAmount = 0;
   let totalRealizedGain = 0;
   let sellCount = 0;
   filtered.forEach(t => {
     if (t.type === 'sell') {
+      totalSellAmount += t.total;
       const pnl = calcRealizedPnL(t);
       if (pnl) { totalRealizedGain += pnl.realizedGain; sellCount++; }
+    } else if (t.type === 'buy') {
+      totalBuyAmount += t.total;
     }
   });
 
-  // 요약 박스
+  // 순현금흐름 (매도 - 매수)
+  const netCash = totalSellAmount - totalBuyAmount;
+
+  // 요약 박스 — 매도 시 클릭하면 상세 모달
   let summaryHtml = '';
   if (sellCount > 0) {
-    const cls  = totalRealizedGain >= 0 ? 'text-up' : 'text-down';
-    const sign = totalRealizedGain >= 0 ? '+' : '-';
+    const cls   = totalRealizedGain >= 0 ? 'text-up' : 'text-down';
+    const sign  = totalRealizedGain >= 0 ? '+' : '-';
     const arrow = totalRealizedGain >= 0 ? '▲' : '▼';
     const periodLabel = _txSelectedMonth === 'ALL' ? '전체' : (_txSelectedMonth.split('-').map(Number).slice(1)[0] + '월');
-    summaryHtml = `<div class="tx-summary">
-      <div class="tx-summary-label">${periodLabel} 실현손익 (${sellCount}건)</div>
-      <div class="tx-summary-value ${cls}">${arrow} ${sign}₩${Math.abs(Math.round(totalRealizedGain)).toLocaleString()}</div>
+    summaryHtml = `<div class="tx-summary-card" onclick="openRealizedDetail()">
+      <div class="tx-summary-head">
+        <span class="tx-summary-title">${periodLabel} 실현손익 (${sellCount}건)</span>
+        <span class="tx-summary-arrow">자세히 ›</span>
+      </div>
+      <div class="tx-summary-grid">
+        <div class="tx-sg-cell">
+          <div class="tx-sg-label">매도 총액</div>
+          <div class="tx-sg-value">₩${Math.round(totalSellAmount).toLocaleString()}</div>
+        </div>
+        <div class="tx-sg-cell">
+          <div class="tx-sg-label">실현 손익</div>
+          <div class="tx-sg-value ${cls}">${arrow} ${sign}₩${Math.abs(Math.round(totalRealizedGain)).toLocaleString()}</div>
+        </div>
+      </div>
     </div>`;
   }
 
